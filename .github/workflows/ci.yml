@@ -57,8 +57,11 @@ jobs:
       # ctx.config is what all thirteen scripts read their settings through, and its
       # coercion needs no DOM: trust is checked before the document is touched, so
       # the whole path runs under plain node.
+      # The files are named rather than the directory: node 20 scans a directory
+      # given to --test, node 22 treats the argument as a path and tries to load
+      # test/js as a module. A shell-expanded glob works on both.
       - name: Test the prelude
-        run: node --test test/js/
+        run: node --test test/js/*_test.js
       # Manifests are not validated here: the c-tests job parses every one of
       # them with the real parser (test_example_manifests), which says more than
       # a JSON syntax check would.
