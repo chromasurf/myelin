@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Idle Reload",
+  "version": "1.0",
+  "description": "Returns to the start URL after a period without input.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "idle-reload.js"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

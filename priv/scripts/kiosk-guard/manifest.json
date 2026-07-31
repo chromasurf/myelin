@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Kiosk Guard",
+  "version": "1.0",
+  "description": "Suppresses browser affordances that make no sense on a kiosk, and hides the cursor when idle.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "kiosk-guard.js"
+      ],
+      "css": [
+        "kiosk-guard.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

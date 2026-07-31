@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Konami Confetti",
+  "version": "1.0",
+  "description": "Reacts to a secret input sequence. Confetti on a canvas, no library.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "konami.js"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

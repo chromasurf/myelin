@@ -1,0 +1,110 @@
+/*
+ * Goes into a shadow root, not into the page — the manifest lists it under
+ * "shadow_css" and domain-block.js hangs it in itself.
+ *
+ * Which is why this reads differently from the other examples: :host styles the
+ * element the shadow root belongs to.
+ *
+ * What the boundary gives us is that the page cannot *select* anything in here.
+ * What it does not give us is protection at the host element, in two ways:
+ *
+ *   1. Inherited properties pass through it. The host stands in the page's tree,
+ *      so a page rule matches it, and font, colour and line height then inherit
+ *      into this tree. So they are set on .panel, inside, where no page selector
+ *      reaches.
+ *   2. Its own properties are weaker than the page's. See the note on the :host
+ *      rule below — this is the one that surprised us on a device.
+ *
+ * No @font-face here, and not by oversight: font faces declared inside a shadow
+ * root are ignored. They have to be in the outer document, which is the page's,
+ * which is not ours. System fonts only.
+ */
+
+/* Everything structural is !important, and that is not belt-and-braces.
+ *
+ * For the host element the cascade runs the other way round from what one
+ * expects: a *normal* declaration in the outer document beats a normal :host
+ * declaration, because the host belongs to the page's tree. Only an important
+ * declaration from the shadow tree wins over the page.
+ *
+ * example.com has `div { opacity: 0.8 }`. On a reTerminal that turned this block
+ * page translucent and the page underneath was readable straight through it —
+ * :host { all: initial } did nothing about it. Measured there:
+ *
+ *     page rule alone                       0.8
+ *     plus :host { opacity: 1 }             0.8   page still wins
+ *     plus :host { opacity: 1 !important }  1     shadow wins
+ *
+ * So a block page that a stylesheet can dim is not a block page. */
+:host {
+  all: initial;
+
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important; /* over everything, including the keyboard */
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  background: #11111b !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+  transform: none !important;
+  pointer-events: auto !important;
+
+  color: #cdd6f4;
+  font-family: ui-monospace, "DejaVu Sans Mono", "Liberation Mono", monospace;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.panel {
+  max-width: 32em;
+  padding: 0 2em;
+  text-align: center;
+
+  /* The inherited properties live here rather than on :host — see the note at
+     the top. Nothing the page writes can select this element. */
+  font-family: ui-monospace, "DejaVu Sans Mono", "Liberation Mono", monospace;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #cdd6f4;
+}
+
+.message {
+  margin: 0 0 0.5em;
+  font-size: 1.4em;
+}
+
+/* The host it refused, so it is clear what was refused rather than just that
+   something was. */
+.host {
+  margin: 0 0 2em;
+  color: #6c7086;
+  font-size: 0.85em;
+  word-break: break-all;
+}
+
+.home {
+  display: inline-block;
+  padding: 0.7em 1.4em;
+  border: 1px solid #a6e3a1;
+  color: #a6e3a1;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.85em;
+}
+
+.home:hover,
+.home:focus {
+  background: #a6e3a1;
+  color: #11111b;
+  outline: none;
+}

@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Offline Banner",
+  "version": "1.0",
+  "description": "Shows a banner while the connection is down, with an optional reachability probe.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "offline-banner.js"
+      ],
+      "css": [
+        "offline-banner.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

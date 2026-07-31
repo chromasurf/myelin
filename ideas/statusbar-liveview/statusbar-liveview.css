@@ -1,0 +1,35 @@
+/* The bar's own look comes from the LiveView the app serves — this only
+   positions it and styles the failure notice. */
+
+#cog-statusbar-lv {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2147483644;
+  overflow: hidden;
+
+  background: #1c1f21;
+  color: #e8ecee;
+  font-family: ui-monospace, "DejaVu Sans Mono", "Liberation Mono", monospace;
+  font-size: 13px;
+}
+
+#cog-statusbar-lv > * {
+  height: 100%;
+}
+
+/* Deliberately visible rather than a silent empty strip: an unreachable
+   firmware bar is something you want to notice. */
+#cog-statusbar-lv.is-failed {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: #3a2226;
+  color: #f3b3c0;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}

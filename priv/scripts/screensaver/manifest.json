@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Screensaver",
+  "version": "1.0",
+  "description": "After a while without input, the Nerves logo drifts across a dark screen with a clock behind it.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "screensaver.js"
+      ],
+      "css": [
+        "screensaver.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  # The parsing and matching layer is libc-only on purpose, so it needs
+  # nothing but a compiler — no GLib, no WPE WebKit, no Nerves toolchain.
+  c-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests
+        run: make -C test/c check
+      - name: Sanitizers
+        run: |
+          make -C test/c clean
+          make -C test/c check \
+            CFLAGS="-std=gnu99 -Wall -Wextra -Werror -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer"
+      # injector.c and extension.c are not in the unit tests — they need WebKit.
+      # This compiles them against declared signatures in test/c/stubs, which
+      # needs GLib only, so a typo in them no longer waits for a device build.
+      - name: Install GLib
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+      - name: Syntax-check the WebKit-facing code
+        run: make -C test/c syntax
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # The ideas are checked too. They ship nowhere, but a syntax error in one is
+      # still a broken thing in the repository.
+      - name: Syntax-check every userscript
+        run: |
+          for f in priv/scripts/*/*.js ideas/*/*.js c_src/cog_prelude.js; do
+            node --check "$f" || exit 1
+          done
+      # The prelude and the wrapper are the code that runs inside *every* script, so
+      # a syntax error there breaks all of them at once. This checks the wrapped
+      # form the loader actually evaluates, not just the parts.
+      - name: Syntax-check a wrapped script
+        run: |
+          { printf '(function (ctx) {"use strict";'
+            cat priv/scripts/keyboard/keyboard.js
+            printf '\n})('
+            cat c_src/cog_prelude.js
+            printf '("keyboard", true, {}, ""))\n'
+          } > /tmp/wrapped.js
+          node --check /tmp/wrapped.js
+      # ctx.config is what all thirteen scripts read their settings through, and its
+      # coercion needs no DOM: trust is checked before the document is touched, so
+      # the whole path runs under plain node.
+      - name: Test the prelude
+        run: node --test test/js/
+      # Manifests are not validated here: the c-tests job parses every one of
+      # them with the real parser (test_example_manifests), which says more than
+      # a JSON syntax check would.
+
+  elixir:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Both ends of what mix.exs claims to support. OTP 27 is the floor the
+        # compile-time check enforces (:json), so the older pair proves the floor
+        # is reachable and the newer one that nothing has since been deprecated
+        # out from under us.
+        include:
+          - otp: "27"
+            elixir: "1.17"
+          - otp: "28"
+            elixir: "1.19"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+      - uses: actions/cache@v4
+        with:
+          path: deps
+          key: deps-${{ matrix.otp }}-${{ hashFiles('mix.lock') }}
+      - run: mix deps.get
+      # Without CROSSCOMPILE the Makefile skips the native build, which is what
+      # a host build does too — this checks that the skip actually works.
+      - run: mix test
+      - run: mix format --check-formatted
+      # `mix test` compiles without --warnings-as-errors, so a deprecation on the
+      # newer pair would pass unnoticed. This is also the only step that compiles
+      # in :dev, which is the env a consumer's `mix deps.compile` uses.
+      - run: MIX_ENV=dev mix compile --warnings-as-errors
+
+# Deliberately not built here: the extension .so itself. It has to be compiled
+# against the WPE WebKit headers of the *target* Nerves system, which is what
+# elixir_make does during the consumer's firmware build. Ubuntu's libwpewebkit
+# packages track a different API version, so a native build here would prove
+# nothing about the target. The C that could break independently — manifest
+# parsing and match patterns — is covered by c-tests above.

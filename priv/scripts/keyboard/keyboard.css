@@ -1,0 +1,217 @@
+/*
+ * Sized from the viewport, with no panel resolution written down anywhere.
+ *
+ * Both axes matter, hence min(vw, vh) inside every clamp: five rows of keys sized
+ * off the width alone take half the screen the moment a panel is rotated, and a
+ * kiosk display's rotation lives in config.txt, not here. The floors stay above
+ * the ~44px touch target that a gloved finger needs; the ceilings keep a large
+ * display from growing keys nobody can span.
+ *
+ * Colours come from custom properties so the light and dark variants differ in
+ * one block each. keyboard.js sets data-theme from <meta name="cog-theme">,
+ * falling back to prefers-color-scheme. Override the --osk-* values from the page
+ * if the palette below is not yours.
+ *
+ * data-shape is the letters/keypad switch: same bar, same place, narrower keys.
+ */
+
+#cog-osk {
+  --osk-bg: rgba(28, 31, 33, 0.97);
+  --osk-key: #3c4145;
+  --osk-key-active: #5a6165;
+  --osk-key-special: #2a2e31;
+  --osk-key-special-active: #454b4f;
+  --osk-text: #f2f5f6;
+  --osk-accent: #4b7fb5;
+  --osk-shadow: rgba(0, 0, 0, 0.3);
+
+  /* One gap for rows and keys alike, so a row never reads as tighter than the
+     keys inside it. */
+  --osk-gap: clamp(4px, min(0.9vw, 0.8vh), 8px);
+
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* Two pixels past the bottom edge, and the padding below adds the same two back
+     so nothing inside moves.
+     Measured on the reTerminal DM at 1280x800: the element's own rect ends exactly
+     at 800 with no gap in the DOM, but its height comes out fractional — 239.95,
+     from the vh-based key heights — and the last row of device pixels rendered
+     blended, letting the page's light background through as a bright line along the
+     bottom of the panel. Rounding the key heights instead would mean giving up
+     min(vw, vh); overhanging the edge costs nothing. */
+  bottom: -2px;
+  z-index: 2147483645; /* below the screensaver, which must cover it */
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--osk-gap);
+  padding: var(--osk-gap) calc(var(--osk-gap) * 0.75)
+    calc(var(--osk-gap) + 2px + env(safe-area-inset-bottom, 0px));
+
+  background: var(--osk-bg);
+  box-shadow: 0 -4px 24px var(--osk-shadow);
+
+  font-family: system-ui, -apple-system, "Liberation Sans", sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+
+  transform: translateY(100%);
+  transition: transform 180ms ease-out;
+}
+
+/* Warm-editorial rather than white: beige surfaces, near-black text, an orange
+   accent. This is a default, not a constraint — every colour is a custom
+   property, so a copy of this script can be recoloured by overriding the six
+   below and nothing else. */
+#cog-osk[data-theme="light"] {
+  --osk-bg: rgba(245, 244, 240, 0.98);
+  --osk-key: #fbf8f3;
+  --osk-key-active: #d8d7d2;
+  --osk-key-special: #ecebe6;
+  --osk-key-special-active: #b8b7b2;
+  --osk-text: #111111;
+  --osk-accent: #ff3300;
+  --osk-shadow: rgba(17, 17, 17, 0.14);
+}
+
+#cog-osk.is-visible {
+  transform: translateY(0);
+}
+
+.cog-osk-row {
+  display: flex;
+  gap: var(--osk-gap);
+  justify-content: center;
+}
+
+.cog-osk-key {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: clamp(40px, min(7.5vw, 6.5vh), 64px);
+  padding: 0 clamp(2px, 0.5vw, 6px);
+
+  /* Keys are divs, not buttons, so that tapping one cannot steal focus from
+     the field. That means centring the label by hand. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 8px;
+  background: var(--osk-key);
+  color: var(--osk-text);
+
+  font-family: inherit;
+  font-size: clamp(16px, min(2.9vw, 2.4vh), 24px);
+  line-height: 1;
+
+  /* Flat and instant: no hover state on a touch panel, and no transition
+     that would lag behind a fast typist. */
+  cursor: default;
+}
+
+#cog-osk[data-theme="light"] .cog-osk-key {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+}
+
+.cog-osk-key:active {
+  background: var(--osk-key-active);
+}
+
+/* Word labels rather than ⇧ ⌫ ⏎ — the kiosk images ship Liberation, which has no
+   glyphs for those — so these need to fit "Shift" where a character key holds one
+   letter. */
+.cog-osk-key-special {
+  background: var(--osk-key-special);
+  font-size: clamp(13px, min(2.3vw, 1.9vh), 19px);
+}
+
+.cog-osk-key-special:active {
+  background: var(--osk-key-special-active);
+}
+
+.cog-osk-key-special.is-active {
+  background: var(--osk-accent);
+  color: #fff;
+}
+
+/* Caps lock: same accent, plus an underline so the two states are told apart
+   at a glance rather than by shade alone. */
+.cog-osk-key-special.is-locked {
+  box-shadow: inset 0 -4px 0 rgba(255, 255, 255, 0.65);
+}
+
+/* Wider now that the caret keys are gone: the space bar is the one key hit
+   without looking, and the two arrows used to take a third of it. */
+.cog-osk-key-space {
+  flex: 6 1 0;
+}
+
+/* The two function-key columns, one down each edge. The widths are chosen so the
+   rows come out to the same flex total — 1.5 + 12 + 1.5 on the top row, 2 + 11 + 2
+   on the bottom letter row — because that is what makes the columns line up
+   vertically. Getting it wrong is visible immediately: the letter block shifts a
+   few pixels from row to row and the whole thing looks hand-placed.
+
+   Wider than a letter for the same reason a real keyboard makes them wider: these
+   are hit without looking, and a miss costs more than a mistyped letter. */
+.cog-osk-key-tab,
+.cog-osk-key-caps,
+.cog-osk-key-backspace {
+  flex: 1.5 1 0;
+}
+
+.cog-osk-key-enter,
+.cog-osk-key-shift {
+  flex: 2 1 0;
+}
+
+/* Dismiss, bottom right as on iOS. Drawn rather than labelled: the kiosk images
+   ship Liberation, which has no glyph for ⌨, and a word would have to be picked in
+   one language. A chevron pointing down at the edge the keyboard slides out to —
+   the keyboard outline iOS draws around it turned to mud at this size. */
+.cog-osk-key-dismiss {
+  flex: 0 0 auto;
+  min-width: clamp(48px, min(9vw, 8vh), 76px);
+}
+
+.cog-osk-key-dismiss::before {
+  content: "";
+  width: clamp(9px, min(1.5vw, 1.3vh), 14px);
+  height: clamp(9px, min(1.5vw, 1.3vh), 14px);
+  border: 2px solid currentColor;
+  border-top: 0;
+  border-left: 0;
+  /* Rotated a hair above centre: a chevron's visual weight sits low, so centring
+     the box leaves it looking dropped. */
+  transform: translateY(-15%) rotate(45deg);
+}
+
+/* --- the keypad ---------------------------------------------------------- */
+
+/* Same bar in the same place: someone at the panel should not have to look for
+   where the keyboard went when the field changes. Only the block of keys narrows
+   — three digits stretched across 800px is a worse target than three within
+   reach of one thumb. */
+#cog-osk[data-shape="keypad"] .cog-osk-row {
+  width: 100%;
+  max-width: min(420px, 62vw);
+  margin: 0 auto;
+}
+
+/* Digits of even width, so 111 and 999 do not shift the caret about. */
+#cog-osk[data-shape="keypad"] .cog-osk-key {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Give the browser room to scroll a focused field clear of the keyboard. */
+html:has(#cog-osk.is-visible) {
+  scroll-padding-bottom: 40vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #cog-osk {
+    transition-duration: 1ms;
+  }
+}

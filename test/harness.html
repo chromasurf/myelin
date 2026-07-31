@@ -1,0 +1,1231 @@
+<meta charset="utf-8">
+<title>cog_userscripts harness</title>
+
+<!--
+  Try every script in priv/scripts/ and ideas/ in any browser, without a device:
+
+      mix cog_userscripts.harness
+      open http://127.0.0.1:8899/test/harness.html
+
+  The scripts are not loaded as files. The harness wraps each one the way the
+  extension does — same prelude, same ctx argument — so what runs here is what
+  runs on a device, and the two properties that matter can actually be seen: a
+  script only gets its own settings, and a page it does not trust cannot switch
+  it off.
+
+  Which scripts exist, which stylesheets they need and in what order their files
+  load all come from the manifests. Nothing is listed twice.
+
+  Settings come from two places, exactly as on a device:
+
+      test/config.json     the device configuration. Edit and reload.
+      ?screensaver-idle=5  a <meta> tag, and only on a trusted origin
+
+  Try ?trusted=0 to see the foreign-page case: every meta tag stops working and
+  only test/config.json is left.
+
+  Monospace, [■]/[ ] state glyphs, and two palettes — Catppuccin Mocha for dark,
+  a warm-editorial beige for light.
+-->
+
+<script>
+  // Runs before the userscripts below, so the meta tags are in place by the
+  // time they read them. Mirrors what a kiosk app would put in its layout.
+  (function () {
+    var params = new URLSearchParams(location.search);
+
+    // No enable= default any more: test/config.json holds the baseline now, the
+    // way a device does. What is left here are the two timers that would
+    // otherwise cover the page while you poke at it.
+    var defaults = {
+      "idle-reload-after": "99999",
+      "display-lock-after": "0"
+    };
+
+    Object.keys(defaults).forEach(function (key) {
+      if (!params.has(key)) params.set(key, defaults[key]);
+    });
+
+    params.forEach(function (value, key) {
+      if (key === "trusted") return;
+      var el = document.createElement("meta");
+      el.name = "cog-" + key;
+      // Commas are easier to type in a URL than spaces.
+      el.content = value.replace(/,/g, " ");
+      document.head.appendChild(el);
+    });
+
+    // The UI at the bottom must judge state by what was actually applied, not
+    // by the raw query string — otherwise the defaults above make it claim a
+    // script is off while the script itself sees the meta tag and runs.
+    window.__hxParams = params;
+
+    // The harness follows the same theme switch as the scripts.
+    var theme = params.get("theme") || "auto";
+    if (theme !== "light" && theme !== "dark") {
+      theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.dataset.theme = theme;
+  })();
+</script>
+
+<style>
+  /* Catppuccin Mocha. */
+  :root,
+  :root[data-theme="dark"] {
+    --base: #1e1e2e;
+    --mantle: #181825;
+    --crust: #11111b;
+    --surface0: #313244;
+    --surface1: #45475a;
+    --overlay0: #6c7086;
+    --subtext0: #a6adc8;
+    --text: #cdd6f4;
+    --green: #a6e3a1;
+    --red: #f38ba8;
+    --blue: #89b4fa;
+    --mauve: #cba6f7;
+    color-scheme: dark;
+  }
+
+  /* Warm-editorial light theme — beige rather than white, the same palette the
+     keyboard's light theme uses. */
+  :root[data-theme="light"] {
+    --base: #fbf8f3;
+    --mantle: #f5f4f0;
+    --crust: #ecebe6;
+    --surface0: #d8d7d2;  /* border */
+    --surface1: #b8b7b2;  /* gray-300 */
+    --overlay0: #82817e;  /* fg-subtle */
+    --subtext0: #4c4a47;  /* fg-muted */
+    --text: #111111;
+    --green: #40b77f;     /* retro-green */
+    --red: #e74c3c;       /* retro-red */
+    --blue: #4aadeb;      /* retro-blue */
+    --mauve: #a78bfa;     /* retro-purple */
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 20px 20px 340px;
+    background: var(--base);
+    color: var(--text);
+    font: 13px/1.6 "JetBrains Mono", ui-monospace, "DejaVu Sans Mono", monospace;
+  }
+
+  /* No rounded corners anywhere — the terminal look is built from straight
+     lines and glyphs. */
+  .hx-head {
+    display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: baseline;
+    border-bottom: 1px solid var(--surface0);
+    padding-bottom: 10px; margin-bottom: 18px;
+  }
+  .hx-logo { color: var(--green); font-weight: 700; letter-spacing: .06em; }
+  .hx-stat { color: var(--overlay0); text-transform: uppercase; font-size: 11px; letter-spacing: .06em; }
+  .hx-stat b { color: var(--text); font-weight: 500; }
+
+  h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--overlay0); font-weight: 500;
+    margin: 0 0 8px;
+  }
+
+  /* Prose wants a measure; the card grid wants the window. */
+  .hx-panel { margin-bottom: 22px; max-width: 860px; }
+  .hx-panel.is-wide { max-width: none; }
+
+  /* --- shared by the cards ----------------------------------------------- */
+  .hx-box { color: var(--overlay0); }
+  .hx-state { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+  .hx-state.running { color: var(--green); }
+  .hx-state.off { color: var(--overlay0); }
+  .hx-state.broken { color: var(--red); }
+  .hx-note { color: var(--overlay0); font-size: 11px; margin: 8px 0 0; max-width: 88ch; }
+
+  .hx-doc {
+    margin-top: 4px; padding-top: 6px;
+    border-top: 1px solid var(--surface0);
+    color: var(--subtext0); font-size: 11px;
+  }
+  .hx-doc[hidden] { display: none; }
+  .hx-doc p { margin: 0 0 6px; }
+  .hx-doc p:last-child { margin-bottom: 0; }
+  .hx-tags { color: var(--mauve); font-size: 10px; word-break: break-all; }
+
+  /* --- buttons / links --- */
+  .hx-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .hx-btn {
+    font: inherit; font-size: 12px; padding: 4px 10px;
+    border: 1px solid var(--surface1); background: transparent;
+    color: var(--subtext0); text-decoration: none; cursor: pointer;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .hx-btn:hover { border-color: var(--overlay0); color: var(--text); }
+  .hx-btn.is-on { border-color: var(--green); color: var(--green); }
+
+  /* --- fields --- */
+  label {
+    display: block; margin: 12px 0 3px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--overlay0);
+  }
+  input, .hx-editable {
+    font: inherit; font-size: 16px; padding: 8px 10px;
+    border: 1px solid var(--surface1); background: var(--mantle);
+    color: var(--text); width: min(100%, 440px);
+  }
+  input:focus, .hx-editable:focus { outline: 1px solid var(--blue); border-color: var(--blue); }
+
+  /* --- log --- */
+  .hx-log {
+    background: var(--crust); border: 1px solid var(--surface0);
+    color: var(--subtext0); padding: 8px 10px; margin: 0;
+    font: inherit; font-size: 12px;
+    max-height: 132px; overflow: auto; white-space: pre;
+  }
+  .hx-hint { color: var(--overlay0); max-width: 78ch; margin: 0 0 18px; }
+  kbd { border: 1px solid var(--surface1); padding: 0 4px; color: var(--subtext0); font-size: 11px; }
+
+  /* --- groups and cards -------------------------------------------------- */
+
+  /* Wider than the panels above: three columns of cards need the room, and this
+     is the part of the page you scan rather than read. */
+  #hx-groups { max-width: none; }
+  #hx-groups > div + div { margin-top: 24px; }
+
+  /* A group has to read as a break in the page, or the grid is one long field of
+     cards again. The rule does that; the size alone did not. */
+  .hx-group-head {
+    display: flex; flex-wrap: wrap; gap: 2px 16px; align-items: baseline;
+    margin: 0 0 10px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--surface0);
+  }
+  .hx-group-title {
+    font-size: 15px; text-transform: uppercase; letter-spacing: .18em;
+    color: var(--text);
+  }
+  .hx-group-blurb { font-size: 11px; color: var(--overlay0); }
+
+  .hx-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 10px;
+    align-items: start;
+  }
+
+  .hx-card {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 7px 10px 9px;
+    background: var(--mantle);
+    border: 1px solid var(--surface0);
+    /* The state lives on this edge — see the card builder. */
+    border-left: 2px solid var(--surface0);
+    animation: hx-rise 220ms cubic-bezier(.2, .8, .2, 1) both;
+    animation-delay: calc(var(--i, 0) * 18ms);
+  }
+  .hx-card.is-running { border-left-color: var(--green); }
+  .hx-card.is-broken { border-left-color: var(--red); }
+
+  .hx-card-head { display: flex; align-items: baseline; gap: 8px; }
+  .hx-card-toggle {
+    display: flex; gap: 8px; align-items: baseline;
+    color: inherit; text-decoration: none;
+    flex: 1 1 auto; min-width: 0;
+  }
+  .hx-card-toggle:hover .hx-name { color: var(--text); }
+  .hx-card .hx-name {
+    text-transform: uppercase; letter-spacing: .04em;
+    color: var(--overlay0); overflow: hidden; text-overflow: ellipsis;
+  }
+  .hx-card.is-running .hx-name, .hx-card.is-broken .hx-name { color: var(--text); }
+  .hx-card.is-running .hx-box { color: var(--green); }
+
+  .hx-more {
+    font: inherit; font-size: 12px; line-height: 1;
+    padding: 0 4px; cursor: pointer;
+    background: transparent; border: 1px solid transparent; color: var(--overlay0);
+  }
+  .hx-more:hover { color: var(--text); border-color: var(--surface1); }
+
+  .hx-desc { margin: 0; font-size: 12px; color: var(--subtext0); }
+
+  .hx-tag {
+    align-self: flex-start;
+    font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--overlay0); border: 1px solid var(--surface0); padding: 0 4px;
+  }
+
+  /* --- options on a card -------------------------------------------------- */
+
+  .hx-opts {
+    display: grid; grid-template-columns: max-content 1fr;
+    gap: 3px 10px; align-items: baseline;
+    margin-top: 2px; padding-top: 6px; border-top: 1px solid var(--surface0);
+  }
+  .hx-opt { display: contents; }
+  .hx-opt-key {
+    font-size: 11px; color: var(--overlay0); white-space: nowrap;
+    cursor: help;
+  }
+  .hx-opt-ctl { display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+  .hx-opt-ctl.is-ro { font-size: 11px; color: var(--subtext0); }
+  .hx-opt-unit { font-size: 10px; color: var(--overlay0); }
+
+  /* Smaller than .hx-btn, and lower case: a card holds a dozen of these and the
+     uppercase letter-spacing of the buttons above would shout. */
+  .hx-chip {
+    font: inherit; font-size: 11px; line-height: 1.5;
+    padding: 0 5px; cursor: pointer;
+    border: 1px solid var(--surface0); background: transparent;
+    color: var(--overlay0); text-decoration: none; white-space: nowrap;
+  }
+  .hx-chip:hover { border-color: var(--overlay0); color: var(--text); }
+  .hx-chip.is-on { border-color: var(--green); color: var(--green); }
+
+  /* The element rule below sets 16px and a 440px width for the test fields; an
+     option field is neither. */
+  /* Grows into the column: a CSS selector or a URL in eleven characters is a
+     truncation, not a value. */
+  .hx-opt-in {
+    font: inherit; font-size: 11px; padding: 0 4px;
+    flex: 1 1 8ch; min-width: 6ch; max-width: 28ch;
+    background: var(--crust); border: 1px solid var(--surface0); color: var(--text);
+  }
+  /* A number never needs the room, and a full-width box for "28" looks broken. */
+  .hx-opt-in[type="number"] { flex: 0 0 7ch; }
+  .hx-opt-in:focus { outline: none; border-color: var(--blue); }
+
+  /* --- configuration rows ------------------------------------------------- */
+
+  .hx-cfg {
+    display: grid; grid-template-columns: max-content 1fr;
+    gap: 6px 14px; align-items: center;
+  }
+  .hx-cfg-key {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--overlay0); cursor: help;
+  }
+
+  @keyframes hx-rise {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hx-card { animation-duration: 1ms; animation-delay: 0ms; }
+  }
+</style>
+
+<div class="hx-head">
+  <span class="hx-logo">◆ COG_USERSCRIPTS</span>
+  <span class="hx-stat">scripts <b id="hx-count">–</b></span>
+  <span class="hx-stat">theme <b id="hx-theme">–</b></span>
+  <span class="hx-stat">origin <b id="hx-trusted">–</b></span>
+</div>
+
+<p class="hx-hint">
+  Every script here is an <b>example</b> — copy it into your application with
+  <code>mix cog_userscripts.copy &lt;name&gt;</code> and adapt it. The glyph
+  and the name switch one on or off, and every option on a card sets a
+  <code>&lt;meta&gt;</code> tag. All of it reloads the page: these values are read
+  once, when a script is injected, so there is nothing to switch at runtime.
+</p>
+
+<div class="hx-panel is-wide">
+  <h2>Scripts</h2>
+  <p class="hx-note" id="hx-untrusted" hidden>
+    This origin is not trusted, so <b>no meta tag counts</b> — every option on
+    every card below is inert until you switch the origin back under
+    Configuration. Only <code>test/config.json</code> is left, which is exactly
+    the foreign-page case.
+  </p>
+  <div class="hx-groups" id="hx-groups"></div>
+  <p class="hx-note" style="margin-top:12px">
+    <span style="color:var(--green)">[■]</span> injected ·
+    <span style="color:var(--overlay0)">[ ]</span> not injected · the left edge of
+    a card carries the same thing: <b style="color:var(--green)">green</b> for a
+    script that registered itself, <b style="color:var(--red)">red</b> for one
+    that was injected and did not — which is a fault, not a setting. Options with
+    no control come from <code>test/config.json</code> and cannot be set from a
+    URL. <kbd>⌄</kbd> opens the long version and the full tag names.
+  </p>
+</div>
+
+<div class="hx-panel">
+  <h2>Configuration</h2>
+  <div class="hx-cfg">
+    <span class="hx-cfg-key" title="cog-theme — shared by keyboard and navbar">theme</span>
+    <div class="hx-row" id="hx-themes"></div>
+    <span class="hx-cfg-key" title="whether &lt;meta&gt; tags count at all">origin</span>
+    <div class="hx-row" id="hx-trust"></div>
+    <span class="hx-cfg-key">everything</span>
+    <div class="hx-row"><a class="hx-btn" href="?">reset</a></div>
+  </div>
+  <p class="hx-note">
+    <code>theme</code> is one key five scripts share, which is why it is here and
+    not five times over. <code>origin</code> is what a device works out from the
+    page against <code>trusted_origins</code>; switched off you get the foreign
+    page — no meta tag has any effect, including a page that tries to switch a
+    script off by claiming <code>cog-disable</code>.
+  </p>
+  <h2 style="margin-top:18px">Device configuration — <code>test/config.json</code></h2>
+  <pre class="hx-log" id="hx-config" style="max-height:220px">…</pre>
+  <p class="hx-note">
+    What <code>runtime.exs</code> holds on a real kiosk. Edit the file and
+    reload — the harness re-reads it per request. Only what a device would
+    genuinely set is here: everything except <code>keyboard</code> and
+    <code>screensaver</code> carries <code>"enabled": false</code> in its own
+    manifest, so this file switches <em>on</em> the two the harness needs to be
+    useful — a bar to look at and fields to type into — and off what would collide
+    in one page: a second bar claiming the top edge, a lock over everything. The
+    PIN is deliberately a <em>number</em>, which is how it arrives from
+    <code>runtime.exs</code>.
+  </p>
+</div>
+
+<div class="hx-panel">
+  <h2>Actions</h2>
+  <div class="hx-row">
+    <button class="hx-btn" id="hx-lock">lock now</button>
+    <button class="hx-btn" id="hx-offline">toggle offline</button>
+    <button class="hx-btn" id="hx-pushevent">fake a push_event</button>
+    <button class="hx-btn" id="hx-leak">leak check</button>
+  </div>
+  <p class="hx-note">
+    These happen <em>now</em> and change no setting — they dispatch the events a
+    device or an application would. Nothing here reloads. To make the screensaver
+    appear, set its <code>idle</code> to 2 on its card instead; that is
+    configuration and belongs there.
+  </p>
+  <pre class="hx-log" id="hx-leak-out">leak check not run</pre>
+</div>
+
+<div class="hx-panel">
+  <h2>Fields</h2>
+  <label for="text">text</label>
+  <input id="text" type="text" placeholder="Text">
+  <label for="email">email</label>
+  <input id="email" type="email" placeholder="mail@example.com">
+  <label for="num">number — raises the keypad</label>
+  <input id="num" type="number" placeholder="0">
+  <label for="amount">inputmode=decimal — the keypad with a comma</label>
+  <input id="amount" type="text" inputmode="decimal" placeholder="0,00">
+  <label for="ce">contenteditable</label>
+  <div id="ce" class="hx-editable" contenteditable></div>
+</div>
+
+<div class="hx-panel">
+  <h2>cog:* events</h2>
+  <pre class="hx-log" id="hx-log">waiting…</pre>
+</div>
+
+<script>
+  // Loaded from JS rather than as plain tags, with a cache-busting query: the
+  // harness server sends no cache headers, so a browser will happily serve the
+  // previous version of a file you just edited — which looks exactly like a
+  // broken script. async = false keeps dynamically inserted scripts running in
+  // the order they are added, so the CSS-then-JS sequence still matches what
+  // the extension does.
+  (function () {
+    // Cache-busting query: the harness server sends no cache headers, so a
+    // browser will happily serve the previous version of a file you just edited
+    // — which looks exactly like a broken script.
+    var t = Date.now();
+
+    // Which scripts exist, which stylesheets they need, and in what order their
+    // files load: all from the manifests, through the server. Writing the lists out
+    // here as well is the kind of duplication that goes stale the first time a
+    // manifest gains a file.
+    var query = new URLSearchParams(window.__hxParams);
+
+    function url(fn, extra) {
+      var q = new URLSearchParams(query);
+      Object.keys(extra || {}).forEach(function (k) { q.set(k, extra[k]); });
+      q.set("t", t);
+      return "/cog/cog_harness:" + fn + "?" + q.toString();
+    }
+
+    fetch(url("manifests"))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        window.__hxData = data;
+
+        // Only what is actually on. A script that is off is not injected on a
+        // device — not its JS and not its stylesheet — so linking its CSS here
+        // would hide exactly the difference this release makes.
+        var on = data.scripts.filter(function (s) { return s.enabled; });
+
+        on.forEach(function (s) {
+          s.css.forEach(function (name) {
+            var link = document.createElement("link");
+            link.rel = "stylesheet";
+            // s.dir comes from the server: an id alone does not say which of
+            // priv/scripts/ and ideas/ a file is in.
+            link.href = "../" + s.dir + "/" + s.id + "/" + name + "?t=" + t;
+            document.head.appendChild(link);
+          });
+        });
+
+        var files = [];
+        on.forEach(function (s) {
+          s.js.forEach(function (name) { files.push({ id: s.id, file: name }); });
+        });
+
+        if (files.length === 0) {
+          window.__hxInit();
+          return;
+        }
+
+        var pending = files.length;
+
+        // async = false keeps dynamically inserted scripts running in the order
+        // they are added, which the manifests decide — simple-keyboard before
+        // the script that uses it.
+        files.forEach(function (entry) {
+          var script = document.createElement("script");
+          script.src = url("js", { script: entry.id, file: entry.file });
+          script.async = false;
+          script.onload = script.onerror = function () {
+            if (--pending === 0) window.__hxInit();
+          };
+          document.body.appendChild(script);
+        });
+      })
+      .catch(function (error) {
+        document.getElementById("hx-groups").textContent =
+          "could not reach the harness server: " + error +
+          " — is this open through mix cog_userscripts.harness rather than as a file?";
+      });
+  })();
+</script>
+
+<script>
+  // Harness UI. Everything below only drives this page — the userscripts
+  // neither know nor need it. Called once the last of them has run, so
+  // window.cogUserscripts.loaded reflects reality.
+  window.__hxInit = function () {
+    // Which group a script belongs to, and the one sentence above each group.
+    //
+    // These are the two axes the library is arranged along, not a functional
+    // grouping: what you get without asking, what we maintain but leave off, and
+    // what is there to be read and reworked. Which is also the order someone meets
+    // them in.
+    //
+    // Hand-kept, which is a risk: the list of scripts comes from the manifests, so
+    // a new script turns up on its own — but it would turn up in no group and
+    // vanish from the page. Hence UNGROUPED at the end, which collects whatever is
+    // missing here. If you see it, add the script to a group above.
+    var GROUPS = [
+      {
+        title: "Stable",
+        blurb:
+          "Shipped in priv/scripts/ and held to a production standard. Text goes into a field, " +
+          "and the screen goes dark when nobody is there.",
+        ids: ["keyboard", "screensaver"]
+      },
+      {
+        title: "Beta",
+        blurb:
+          "Also shipped, also maintained, but their shape may still change. Each one is a decision: " +
+          "diagnostics on a customer-facing panel, 48px off every page, a page covered over. " +
+          "navbar and statusbar both claim the top edge — run one.",
+        ids: [
+          "kiosk-guard",
+          "domain-block",
+          "debug-overlay",
+          "offline-banner",
+          "navbar",
+          "statusbar"
+        ]
+      },
+      {
+        title: "Ideas",
+        blurb:
+          "In ideas/, which ships nowhere. Written to be read and reworked, and unfinished on " +
+          "purpose: the lock is a visual one, the LiveView bar cannot reach a foreign https page.",
+        ids: [
+          "display-lock",
+          "statusbar-liveview",
+          "probe-field",
+          "idle-reload",
+          "konami"
+        ]
+      }
+    ];
+
+    // Kept next to the scripts on purpose: this table is the documentation the
+    // harness shows, so it has to be updated when a script gains an option.
+    //
+    // Each option says what kind of thing it is, and the card builds a control from
+    // that. Four kinds carry a value through the query string, which means a
+    // reload — these are read once, when a script is injected, so there is nothing
+    // to switch at runtime:
+    //
+    //   enum    fixed set of values          { def, values }
+    //   flag    present or absent            { on }
+    //   number  a field, Enter applies       { def, unit, quick }
+    //   text    the same for anything else   { def }
+    //
+    // And a fifth that carries nothing:
+    //
+    //   config  lives in test/config.json and cannot be set from a URL at all.
+    //           Read-only here, because a control that looks settable and is not is
+    //           worse than a line of text.
+    //
+    // `label` is the short form; the full cog-… name hangs off it as a title and
+    // stands in the expanded text, so the reference is still there.
+    //
+    // cog-theme is deliberately absent from every script that reads it. It is one
+    // key shared by five of them, and five copies of the same control would be
+    // noise — it sits under Configuration instead.
+    var SCRIPTS = [
+      {
+        id: "keyboard",
+        doc: "Touch keyboard, in two variants: letters, or a keypad for a number field. Slides in when a field takes focus and switches variant while it is up, because focus goes straight from a text field to a number field without it ever sliding away. Writes through the native value setter and fires a bubbling input event, so LiveView and React see the change. The letter layouts are the physical ones — German T1 and US ANSI — so the letter block carries ü + ö ä # and , . - or [ ] ; ' and , . / where a real keyboard has them, and Shift gives what it gives there: , → ; and - → _ in German, , → < and / → ? in English. ß has its own key and stays ß under Shift. The function keys follow iOS: Tab and Caps down the left edge, Del and Enter down the right, Shift at both ends of the bottom letter row, and a bottom row with nothing on it that types — Enter beside the dismiss key meant reaching for one and getting the other. Shift is one-shot, Caps is a key of its own and locks; Caps only affects letters, as on the physical thing. Tab walks the fields in document order, since a synthesised keydown moves no focus. Enter on a single-line field means \"done\" and puts the keyboard away; in a textarea it adds a line and the keyboard stays. The bar hangs 2px past the bottom edge on purpose — its height is fractional from the vh-based key sizes, and the last device pixel row rendered blended, showing the page through as a bright line on the DM panel. Symbols sit on two further levels behind ?123 and #+=, which differ by language; cog-keyboard-start decides which layer a field opens on. No caret keys — a tap into the text puts the caret where the finger is. The keypad's decimal separator follows the field: a comma assigned to an input[type=number] assigns nothing at all, so that one gets a point. Key sizes come from min(vw, vh), so a rotated panel does not hand half its height to the keyboard. cog-keyboard-skip keeps it off pages that have a keyboard of their own: regular expressions against the hostname, because the interesting rule is a shape rather than a list — a kiosk's own application is reached by address, and an address from cluster discovery changes with the network, so there is no host to write down. A pattern that does not compile is dropped with a warning rather than thrown.",
+        opts: [
+          { key: "keyboard-layout", label: "layout", kind: "enum", def: "de", values: ["de", "en"] },
+          { key: "keyboard-numbers", label: "digit row", kind: "flag", on: "1" },
+          {
+            key: "keyboard-start",
+            label: "opens on",
+            kind: "enum",
+            def: "letters",
+            values: ["letters", "symbols"]
+          },
+          {
+            key: "keyboard-keypad",
+            label: "keypad for",
+            kind: "text",
+            def: 'input[type="number"], input[inputmode="numeric"], input[inputmode="decimal"]',
+            note: "a bad selector is refused, not thrown"
+          },
+          {
+            // config, not text: the query string turns commas into spaces so a
+            // list can be typed, and {1,3} in a pattern would not survive that.
+            label: "skip",
+            kind: "config",
+            def: "3 patterns",
+            note:
+              "regexes vs the hostname. The three in test/config.json miss 127.0.0.1 on purpose, " +
+              "or the harness would have no keyboard to try — add ^127\\. to watch it stand aside"
+          }
+        ]
+      },
+      {
+        id: "navbar",
+        doc: "A browser bar: home, reload and the address. Pushes the document down instead of covering its first row — and so does statusbar, by writing the same documentElement padding, so whichever loads second wins it and the other covers the page. Run one. Every icon is drawn in CSS, because the kiosk images have no glyph for ⌂ ⟳ ▸. No back or forward — sessionStorage cannot survive a host change, so this bar has no history of its own. No menu button either: a full-screen view is its own thing and a bar that opens one has to know it exists. Typing needs the keyboard enabled alongside.",
+        opts: [
+          { key: "navbar-height", label: "height", kind: "number", def: 48, unit: "px", quick: [40, 64] },
+          {
+            key: "navbar-items",
+            label: "items",
+            kind: "text",
+            def: "home reload url go",
+            note: "order matters"
+          },
+          { key: "navbar-home", label: "home", kind: "text", def: "/" },
+          { key: "navbar-accent", label: "accent", kind: "text", def: "#42a7c6" },
+          { key: "navbar-autohide", label: "autohide", kind: "flag", on: "1" },
+          { key: "navbar-font", label: "font", kind: "enum", def: "bundled", values: ["bundled", "system"] }
+        ]
+      },
+      {
+        id: "screensaver",
+        doc: "After a while without input, the Nerves logo drifts across a dark screen and bounces off the edges, changing colour on each hit. Any input wakes it, including pointer movement, and the tap that wakes it is swallowed whole — both the pointerdown and the click that follows, or waking on top of a link would follow the link. It also takes cog:screensaver:show and cog:screensaver:hide as commands, so an app can put the screen to sleep without waiting for the timer; try it with \"fake a push_event\" under Shortcuts. Dims the DOM only — not the panel backlight.",
+        opts: [
+          {
+            key: "screensaver-idle",
+            label: "idle",
+            kind: "number",
+            def: 120,
+            unit: "s",
+            quick: [2, 30, 300]
+          },
+          {
+            key: "screensaver-mode",
+            label: "mode",
+            kind: "enum",
+            def: "both",
+            values: ["both", "logo", "clock"]
+          },
+          { key: "screensaver-speed", label: "speed", kind: "number", def: 70, unit: "px/s", quick: [40, 140] },
+          {
+            key: "screensaver-color",
+            label: "colour",
+            kind: "enum",
+            def: "cycle",
+            values: ["cycle", "nerves"],
+            note: "or any CSS colour, as text"
+          },
+          { key: "screensaver-bg", label: "background", kind: "text", def: "#000" }
+        ]
+      },
+      {
+        id: "statusbar",
+        doc: "A fixed strip across the top: clock, current URL, connection state. Entirely self-contained — no network, no assets — so it works on any page, including foreign https ones. Pushes the document down instead of covering its first row.",
+        opts: [
+          { key: "statusbar-height", label: "height", kind: "number", def: 28, unit: "px", quick: [24, 40] },
+          { key: "statusbar-items", label: "items", kind: "text", def: "clock url online", note: "order matters" },
+          { key: "statusbar-format", label: "clock", kind: "enum", def: "24h", values: ["24h", "12h"] },
+          { key: "statusbar-text", label: "label", kind: "text", def: "", note: "fixed, shown first" },
+          { key: "statusbar-bg", label: "background", kind: "text", def: "#1c1f21" },
+          { key: "statusbar-fg", label: "foreground", kind: "text", def: "#e8ecee" }
+        ]
+      },
+      {
+        id: "statusbar-liveview",
+        doc: "The same bar, but served by the firmware app as a real LiveView: fetches the rendered container and lets the LiveView client connect. Works on your own app and http pages. On a foreign https page WebKit blocks the request to http://localhost — the only engine that does — and the script says so instead of failing silently.",
+        opts: [
+          {
+            key: "statusbar-liveview-url",
+            label: "url",
+            kind: "text",
+            def: "http://localhost:4000/statusbar"
+          },
+          { key: "statusbar-liveview-assets", label: "assets", kind: "text", def: "", note: "LiveView client bundle" },
+          { key: "statusbar-liveview-height", label: "height", kind: "number", def: 28, unit: "px", quick: [24, 40] }
+        ]
+      },
+      {
+        id: "display-lock",
+        doc: "Full-screen PIN lock with a keypad. A visual lock, not access control — the PIN is in the DOM and anyone who can reach another URL walks around it. Lock it from anywhere with a cog:display-lock:lock event.",
+        opts: [
+          { key: "display-lock-pin", label: "pin", kind: "text", def: "0000" },
+          {
+            key: "display-lock-after",
+            label: "after",
+            kind: "number",
+            def: 0,
+            unit: "s idle",
+            quick: [0, 10],
+            note: "0 means on request only"
+          },
+          { key: "display-lock-on-load", label: "on load", kind: "flag", on: "1" },
+          { key: "display-lock-message", label: "message", kind: "text", def: "Locked" },
+          { key: "display-lock-attempts", label: "attempts", kind: "number", def: 3, note: "wrong tries before a pause" },
+          { key: "display-lock-timeout", label: "pause", kind: "number", def: 30, unit: "s" }
+        ]
+      },
+      {
+        id: "debug-overlay",
+        doc: "URL, viewport, FPS, JS heap, loaded scripts and the last JS errors. Three taps in the top-right corner toggle it. Replaces poking at the remote inspector when you are standing at the panel.",
+        opts: [{ key: "debug-overlay-open", label: "open", kind: "flag", on: "1", note: "or three taps top-right" }]
+      },
+      {
+        id: "kiosk-guard",
+        doc: "Suppresses context menu, text selection, drag & drop and pinch zoom, and hides the mouse cursor after a few idle seconds. Text fields stay selectable.",
+        opts: [
+          {
+            key: "kiosk-guard-allow",
+            label: "allow",
+            kind: "text",
+            def: "",
+            note: "selection contextmenu cursor zoom drag — any of them, space separated"
+          }
+        ]
+      },
+      {
+        id: "offline-banner",
+        doc: "Shows a banner while the connection is down. navigator.onLine only reports whether a link exists, so an optional probe URL re-checks reachability.",
+        opts: [
+          { key: "offline-banner-text", label: "text", kind: "text", def: "No connection" },
+          { key: "offline-banner-probe", label: "probe", kind: "text", def: "", note: "URL to HEAD every 15s" }
+        ]
+      },
+      {
+        id: "idle-reload",
+        doc: "Returns to a start URL after a period without input, so a terminal left in some sub-form finds its way back.",
+        opts: [
+          {
+            key: "idle-reload-after",
+            label: "after",
+            kind: "number",
+            def: 300,
+            unit: "s",
+            quick: [5, 300, 99999],
+            note: "the harness sets 99999 by default, or it would navigate while you read"
+          },
+          { key: "idle-reload-url", label: "url", kind: "text", def: "/" }
+        ]
+      },
+      {
+        id: "konami",
+        doc: "Reacting to a secret gesture: the classic sequence, or five taps in the top-left corner. Confetti on a canvas, no library.",
+        opts: []
+      },
+      {
+        id: "probe-field",
+        doc: "A text field and a number field to tap, for a page that has none of its own — bringing the library up on a device usually means staring at a screen with nothing to focus. Counts the input events as you type, which is the part that matters: the keyboard writes through the native value setter and then fires a bubbling input event, and without that LiveView would never see the change. It sits in a shadow root, which also demonstrates that a field inside one is reachable at all.",
+        opts: [
+          { label: "right", kind: "config", def: "40px", note: "where it sits — top right by default" },
+          { label: "top", kind: "config", def: "180px" },
+          { label: "left", kind: "config", def: "—", note: "set this instead and it wins" }
+        ]
+      },
+      {
+        id: "domain-block",
+        doc: "Covers a page that is not on the allowlist, with a way back to the app. The one example configured entirely from the device — it has to work on pages that know nothing about it, so there is nothing a visited page can say to change it, cog-disable included. Its stylesheet goes into a shadow root, so the page's CSS cannot reshape it. Not a network filter: at document_end the page has already loaded, and real blocking is Cog's --content-filter.",
+        // Config keys, not meta tags — by design, it takes nothing from the page.
+        opts: [
+          { label: "allowlist", kind: "config", def: "localhost:4000", note: "host[:port], *.example.com" },
+          { label: "home", kind: "config", def: "/test/harness.html", note: "where the way back leads" },
+          { label: "message", kind: "config", def: "This page is not part of the terminal." }
+        ]
+      }
+    ];
+    // Keyed by id so the rows can come from the server while the prose stays
+    // here — the docs are hand-written, the state is not.
+    var DOCS = {};
+    SCRIPTS.forEach(function (entry) { DOCS[entry.id] = entry; });
+
+    // The effective settings, defaults included — see __hxParams above.
+    var params = window.__hxParams || new URLSearchParams(location.search);
+    function list(key) {
+      return (params.get(key) || "").split(/[ ,]+/).filter(Boolean);
+    }
+    var enable = list("enable");
+    var disable = list("disable");
+
+    // Whether a script is on is no longer worked out here. The server applies
+    // the same precedence the extension does — manifest, then device
+    // configuration, then meta tags on a trusted origin — and this page asks it,
+    // rather than keeping a second copy of the rule that could disagree.
+    var data = window.__hxData || { trusted: false, scripts: [] };
+
+    // What actually happened, straight from the scripts themselves.
+    var loaded = (window.cogUserscripts && window.cogUserscripts.loaded) || [];
+
+    /* --- option controls --- */
+
+    // Every option below is read once, when the script is injected. So changing one
+    // is a navigation and not a switch: one helper builds that URL, and all four
+    // kinds go through it. Setting an option to its own default drops the parameter
+    // instead of writing it, which keeps the address bar readable.
+    function href(key, value) {
+      var next = new URLSearchParams(params);
+      if (value === null || value === "") next.delete(key);
+      else next.set(key, value);
+      return "?" + next.toString();
+    }
+
+    function chip(text, active, key, value) {
+      var a = document.createElement("a");
+      a.className = "hx-chip" + (active ? " is-on" : "");
+      a.href = href(key, value);
+      a.textContent = text;
+      return a;
+    }
+
+    function optionRow(opt) {
+      var row = document.createElement("div");
+      row.className = "hx-opt";
+
+      var key = document.createElement("span");
+      key.className = "hx-opt-key";
+      key.textContent = opt.label;
+      // The full name on hover, and in the expanded text below — the card would be
+      // unreadable with cog-statusbar-liveview-height spelled out on every line.
+      key.title = (opt.key ? "cog-" + opt.key : "test/config.json") + (opt.note ? " — " + opt.note : "");
+      row.appendChild(key);
+
+      var ctl = document.createElement("span");
+      ctl.className = "hx-opt-ctl";
+      row.appendChild(ctl);
+
+      // Not settable from here at all: it comes from test/config.json, and a
+      // control that looks live and is not would be worse than plain text.
+      if (opt.kind === "config") {
+        ctl.classList.add("is-ro");
+        ctl.textContent = String(opt.def === undefined ? "—" : opt.def);
+        return row;
+      }
+
+      var current = params.get(opt.key);
+
+      if (opt.kind === "enum") {
+        opt.values.forEach(function (v) {
+          var active = (current === null ? opt.def : current) === v;
+          ctl.appendChild(chip(v, active, opt.key, v === opt.def ? null : v));
+        });
+        return row;
+      }
+
+      if (opt.kind === "flag") {
+        var on = current === opt.on;
+        ctl.appendChild(chip(on ? "on" : "off", on, opt.key, on ? null : opt.on));
+        return row;
+      }
+
+      var input = document.createElement("input");
+      input.className = "hx-opt-in";
+      input.type = opt.kind === "number" ? "number" : "text";
+      input.value = current === null ? "" : current;
+      input.placeholder = String(opt.def === undefined || opt.def === "" ? "—" : opt.def);
+      input.setAttribute("aria-label", opt.label);
+      input.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter") return;
+        var v = input.value.trim();
+        location.search = href(opt.key, v === String(opt.def) ? null : v);
+      });
+      ctl.appendChild(input);
+
+      if (opt.unit) {
+        var unit = document.createElement("span");
+        unit.className = "hx-opt-unit";
+        unit.textContent = opt.unit;
+        ctl.appendChild(unit);
+      }
+
+      (opt.quick || []).forEach(function (v) {
+        ctl.appendChild(chip(String(v), current === String(v), opt.key, v === opt.def ? null : String(v)));
+      });
+
+      return row;
+    }
+
+    /* --- script cards --- */
+    var running = 0;
+    var order = 0;
+
+    function card(script) {
+      var docs = DOCS[script.id] || { doc: "", opts: [] };
+      var wanted = script.enabled;
+      var isRunning = loaded.indexOf(script.id) !== -1;
+      if (isRunning) running++;
+
+      // Build the URL that flips this one. Both lists are kept because either
+      // may be what overrides the device configuration for this script.
+      var nextEnable = enable.slice();
+      var nextDisable = disable.slice();
+      function drop(arr, v) { var i = arr.indexOf(v); if (i !== -1) arr.splice(i, 1); }
+
+      if (wanted) {
+        drop(nextEnable, script.id);
+        nextDisable.push(script.id);
+      } else {
+        drop(nextDisable, script.id);
+        nextEnable.push(script.id);
+      }
+
+      var next = new URLSearchParams(params);
+      if (nextEnable.length) next.set("enable", nextEnable.join(","));
+      else next.delete("enable");
+      if (nextDisable.length) next.set("disable", nextDisable.join(","));
+      else next.delete("disable");
+
+      var state, cls;
+      if (isRunning) { state = "running"; cls = "running"; }
+      else if (wanted) { state = "not loaded"; cls = "broken"; }
+      else { state = "off"; cls = "off"; }
+
+      var el = document.createElement("div");
+      // The left edge carries the state, so the grid reads as a status board from
+      // across the room. The glyph says the same thing in text, because colour
+      // must never be the only carrier.
+      el.className = "hx-card" + (isRunning ? " is-running" : wanted ? " is-broken" : "");
+      el.style.setProperty("--i", order++);
+
+      var head = document.createElement("div");
+      head.className = "hx-card-head";
+
+      // The toggle is the glyph and the name, not the whole card: the card now
+      // holds controls of its own, and a wrapping <a> would swallow them.
+      var toggle = document.createElement("a");
+      toggle.className = "hx-card-toggle";
+      toggle.href = "?" + next.toString();
+      toggle.innerHTML =
+        '<span class="hx-box">' + (wanted ? "[■]" : "[ ]") + "</span>" +
+        '<span class="hx-name">' + script.id + "</span>";
+      head.appendChild(toggle);
+
+      var badge = document.createElement("span");
+      badge.className = "hx-state " + cls;
+      badge.textContent = state;
+      head.appendChild(badge);
+
+      var more = document.createElement("button");
+      more.className = "hx-more";
+      more.textContent = "⌄";
+      more.title = "the long version";
+      head.appendChild(more);
+
+      el.appendChild(head);
+
+      // One sentence, always visible, and it comes from the manifest rather than a
+      // second hand-kept copy here — the same sentence mix cog_userscripts.copy
+      // prints.
+      var desc = document.createElement("p");
+      desc.className = "hx-desc";
+      desc.textContent = script.description || "";
+      el.appendChild(desc);
+
+      if (script.shadow_css.length) {
+        var sr = document.createElement("span");
+        sr.className = "hx-tag";
+        sr.textContent = "shadow root";
+        el.appendChild(sr);
+      }
+
+      // Not every option earns a place on the face of the card. The ones worth a
+      // glance are those with a handful of answers — an enum, a flag, a number
+      // with useful values beside it. A free-text field for a colour, a URL or a
+      // CSS selector is something you fill in while configuring deliberately, and
+      // then you have the card open anyway. Every card carrying its every text
+      // field was a wall of forms with the scripts lost inside it.
+      var inline = docs.opts.filter(function (o) {
+        if (o.kind === "enum" || o.kind === "flag") return true;
+        if (o.kind === "number") return !!(o.quick && o.quick.length);
+        return false;
+      });
+      var rest = docs.opts.filter(function (o) { return inline.indexOf(o) === -1; });
+
+      // Unless that would leave the card blank — a script whose only option is a
+      // selector should still show it.
+      if (!inline.length) { inline = docs.opts; rest = []; }
+
+      function optionGrid(list) {
+        var grid = document.createElement("div");
+        grid.className = "hx-opts";
+        list.forEach(function (opt) { grid.appendChild(optionRow(opt)); });
+        return grid;
+      }
+
+      if (inline.length) el.appendChild(optionGrid(inline));
+
+      var doc = document.createElement("div");
+      doc.className = "hx-doc";
+      doc.hidden = true;
+
+      if (rest.length) doc.appendChild(optionGrid(rest));
+
+      var prose = document.createElement("p");
+      prose.textContent = docs.doc;
+      doc.appendChild(prose);
+
+      var tags = docs.opts
+        .map(function (o) { return o.key ? "cog-" + o.key : "config: " + o.label; })
+        .join(" · ");
+
+      if (tags) {
+        var tagLine = document.createElement("p");
+        tagLine.className = "hx-tags";
+        tagLine.textContent = tags;
+        doc.appendChild(tagLine);
+      }
+
+      more.addEventListener("click", function () {
+        doc.hidden = !doc.hidden;
+        more.textContent = doc.hidden ? "⌄" : "⌃";
+      });
+
+      el.appendChild(doc);
+      return el;
+    }
+
+    /* --- groups --- */
+    var groupsEl = document.getElementById("hx-groups");
+    var byId = {};
+    data.scripts.forEach(function (s) { byId[s.id] = s; });
+
+    // Whatever no group claims. Empty is the healthy state; anything in here is a
+    // script that was added to priv/scripts/ or ideas/ and not to GROUPS above.
+    var claimed = {};
+    GROUPS.forEach(function (g) { g.ids.forEach(function (id) { claimed[id] = true; }); });
+    var orphans = data.scripts.filter(function (s) { return !claimed[s.id]; });
+
+    function section(title, blurb, scripts) {
+      if (!scripts.length) return;
+
+      var head = document.createElement("div");
+      head.className = "hx-group-head";
+      head.innerHTML =
+        '<span class="hx-group-title">' + title + "</span>" +
+        '<span class="hx-group-blurb">' + blurb + "</span>";
+
+      var grid = document.createElement("div");
+      grid.className = "hx-grid";
+      scripts.forEach(function (s) { grid.appendChild(card(s)); });
+
+      var wrap = document.createElement("div");
+      wrap.appendChild(head);
+      wrap.appendChild(grid);
+      groupsEl.appendChild(wrap);
+    }
+
+    GROUPS.forEach(function (g) {
+      section(
+        g.title,
+        g.blurb,
+        g.ids.map(function (id) { return byId[id]; }).filter(Boolean)
+      );
+    });
+
+    section(
+      "Ungrouped",
+      "On disk but in no group above — add it to GROUPS in this file.",
+      orphans
+    );
+
+    // Meta tags do nothing on an untrusted origin, which makes every control on
+    // every card inert. Said once, here, rather than on every card.
+    if (!data.trusted) document.getElementById("hx-untrusted").hidden = false;
+
+    document.getElementById("hx-count").textContent =
+      running + " / " + data.scripts.length + " running";
+
+    /* --- trusted origin --- */
+    document.getElementById("hx-trusted").textContent =
+      data.trusted ? "trusted" : "not trusted";
+
+    var trust = document.getElementById("hx-trust");
+    [["trusted", "1"], ["not trusted", "0"]].forEach(function (entry) {
+      var next = new URLSearchParams(params);
+      next.set("trusted", entry[1]);
+
+      var a = document.createElement("a");
+      a.className = "hx-btn" + (data.trusted === (entry[1] === "1") ? " is-on" : "");
+      a.href = "?" + next.toString();
+      a.textContent = entry[0];
+      trust.appendChild(a);
+    });
+
+    /* --- device configuration --- */
+    fetch("../test/config.json?t=" + Date.now())
+      .then(function (r) { return r.text(); })
+      .then(function (text) {
+        document.getElementById("hx-config").textContent = text;
+      })
+      .catch(function () {
+        document.getElementById("hx-config").textContent = "test/config.json not readable";
+      });
+
+    /* --- leak check --- */
+    // The point of handing settings to a single script instead of putting them on
+    // window: on a foreign page, everything reachable from window is readable by
+    // the page's own scripts. So walk window and look for two values that exist
+    // nowhere but in test/config.json — the display-lock PIN, and a canary put
+    // there for this.
+    //
+    // The canary earns its keep: the first version searched for an allowlist
+    // entry, which was the harness's own origin, and window.origin matched it.
+    document.getElementById("hx-leak").addEventListener("click", function () {
+      var needles = ["4711", "cog-canary-2f8a"];
+      var found = [];
+
+      function scan(label, object) {
+        var keys;
+        try { keys = Object.getOwnPropertyNames(object); } catch (e) { return; }
+
+        keys.forEach(function (key) {
+          var value;
+          try { value = object[key]; } catch (e) { return; }
+          if (typeof value !== "string") return;
+          needles.forEach(function (needle) {
+            if (value.indexOf(needle) !== -1) found.push(label + "." + key + " = " + value);
+          });
+        });
+      }
+
+      scan("window", window);
+      if (window.cogUserscripts) scan("window.cogUserscripts", window.cogUserscripts);
+      if (window.cogOsk) scan("window.cogOsk", window.cogOsk);
+
+      var cogKeys = window.cogUserscripts
+        ? Object.keys(window.cogUserscripts).join(", ")
+        : "(absent)";
+
+      document.getElementById("hx-leak-out").textContent =
+        "window.cogUserscripts holds: " + cogKeys + "\n" +
+        "walked window for " + needles.join(" and ") + "\n\n" +
+        (found.length
+          ? "LEAK:\n" + found.join("\n")
+          : "nothing found — each script's settings stayed inside it");
+    });
+
+    /* --- theme --- */
+    var wantedTheme = params.get("theme") || "auto";
+    document.getElementById("hx-theme").textContent =
+      wantedTheme +
+      (wantedTheme === "auto" ? " → " + document.documentElement.dataset.theme : "");
+
+    var themes = document.getElementById("hx-themes");
+    ["auto", "light", "dark"].forEach(function (name) {
+      var next = new URLSearchParams(params);
+      if (name === "auto") next.delete("theme");
+      else next.set("theme", name);
+
+      var a = document.createElement("a");
+      a.className = "hx-btn" + (wantedTheme === name ? " is-on" : "");
+      a.href = "?" + next.toString();
+      a.textContent = name;
+      themes.appendChild(a);
+    });
+
+    // The keyboard options used to have a panel of their own here, which made one
+    // script the exception and left every other one a reference table. They are on
+    // the keyboard card now, like everyone else's.
+
+    /* --- event log --- */
+    var log = document.getElementById("hx-log");
+    var lines = [];
+    [
+      "cog:keyboard:show", "cog:keyboard:hide",
+      "cog:screensaver:show", "cog:screensaver:hide",
+      "cog:navbar:ready",
+      "cog:statusbar:ready", "cog:statusbar-liveview:ready",
+      "cog:statusbar-liveview:failed",
+      "cog:display-lock:locked", "cog:display-lock:unlocked", "cog:display-lock:failed",
+      "cog:offline", "cog:online", "cog:konami"
+    ].forEach(function (name) {
+      window.addEventListener(name, function (event) {
+        // cog:keyboard:show carries which variant came up, and that is the one
+        // detail worth seeing in a log: it is how you tell that focus moving to a
+        // number field switched the layout rather than doing nothing.
+        var detail = event.detail && event.detail.layout ? "  (" + event.detail.layout + ")" : "";
+
+        lines.unshift(new Date().toTimeString().slice(0, 8) + "  " + name + detail);
+        log.textContent = lines.slice(0, 40).join("\n");
+      });
+    });
+
+    /* --- actions --- */
+    // What used to be "shortcuts" was two different things in one row. Setting an
+    // idle timeout to two seconds is configuration and lives on the screensaver
+    // card now, as a quick value next to its `idle` field. What is left here all
+    // happens at once and changes nothing.
+
+    document.getElementById("hx-lock").addEventListener("click", function () {
+      window.dispatchEvent(new CustomEvent("cog:display-lock:lock"));
+    });
+
+    // This page is not a LiveView, so the phx: event a script listens for never
+    // arrives on its own. What LiveView's client does with push_event(socket,
+    // "cog:screensaver:show", payload) is exactly this dispatch, so firing it by
+    // hand is not a simulation — it is the same input a script gets on a device.
+    //
+    // The other direction, ctx.emit pushing, needs a real LiveView and cannot be
+    // faked here.
+    document.getElementById("hx-pushevent").addEventListener("click", function () {
+      // Which name to send is read off the overlay, the way "toggle offline" below
+      // reads the banner — otherwise hide, the direction an app actually drives,
+      // would be unreachable from here.
+      var overlay = document.getElementById("cog-screensaver");
+      var visible = overlay && overlay.classList.contains("is-visible");
+      var name = visible ? "screensaver:hide" : "screensaver:show";
+
+      window.dispatchEvent(
+        new CustomEvent("phx:cog:" + name, { detail: { from: "harness" } })
+      );
+    });
+
+    document.getElementById("hx-offline").addEventListener("click", function () {
+      // navigator.onLine is read-only, so fake the events the script listens to.
+      var el = document.getElementById("cog-offline-banner");
+      var offline = !(el && el.classList.contains("is-visible"));
+      window.dispatchEvent(new Event(offline ? "offline" : "online"));
+    });
+  };
+</script>

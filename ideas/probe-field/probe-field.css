@@ -1,0 +1,87 @@
+/*
+ * Into a shadow root — see the note in domain-block.css for why everything
+ * structural is !important: at the host element a plain rule from the page beats
+ * a normal :host declaration, and only an important one from in here wins back.
+ */
+:host {
+  all: initial;
+
+  position: fixed !important;
+  z-index: 2147483000 !important; /* under the keyboard, over the page */
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+/* Inherited properties are set inside the tree, where no page selector reaches —
+   on the host they would come from whatever page this landed on. */
+.box {
+  font-family: ui-monospace, "DejaVu Sans Mono", "Liberation Mono", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1c1f21;
+
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #b8b7b2;
+  padding: 14px 16px;
+  min-width: 22em;
+
+  /* A shadow, because this floats over a page it knows nothing about. With the
+     border alone it read as part of whatever was behind it — on the harness it
+     looked like a panel wedged into the script list rather than one above it. No
+     radius: nothing else here has one. */
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.18),
+    0 14px 36px rgba(0, 0, 0, 0.26);
+}
+
+.title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #82817e;
+  margin-bottom: 10px;
+}
+
+.field {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #82817e;
+  margin-bottom: 3px;
+}
+
+/* Touch-sized: 18px and generous padding, because this is tapped with a finger
+   on a panel, not clicked with a mouse. */
+.field input {
+  font: inherit;
+  font-size: 18px;
+  padding: 12px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #b8b7b2;
+  background: #fbf8f3;
+  color: #111111;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: #40b77f;
+}
+
+.readout {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #ecebe6;
+  font-size: 12px;
+  color: #4c4a47;
+  word-break: break-all;
+}

@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Display Lock",
+  "version": "1.0",
+  "description": "A full-screen PIN lock. A visual lock, not access control — the PIN is in the DOM.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "display-lock.js"
+      ],
+      "shadow_css": [
+        "display-lock.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Domain Block",
+  "version": "1.0",
+  "description": "Covers pages outside an allowlist with a way back to the app. Not a network filter.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "domain-block.js"
+      ],
+      "shadow_css": [
+        "domain-block.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

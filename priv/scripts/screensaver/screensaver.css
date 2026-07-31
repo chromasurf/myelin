@@ -1,0 +1,84 @@
+/* The overlay's background colour is set from JS (cog-screensaver-bg), so it
+   is deliberately absent here. */
+
+#cog-screensaver {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646; /* below the debug overlay, above everything else */
+  overflow: hidden;
+
+  color: #e8ecee;
+  font-family: system-ui, -apple-system, "Liberation Sans", sans-serif;
+
+  opacity: 0;
+  visibility: hidden;
+  /* While hidden the overlay must not intercept anything; when visible it
+     deliberately does, so the tap that wakes the screen goes no further. */
+  pointer-events: none;
+  transition: opacity 600ms ease-out, visibility 0s linear 600ms;
+}
+
+#cog-screensaver.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 600ms ease-in, visibility 0s;
+}
+
+/* Clock sits centred and still; the logo drifts over it. */
+.cog-screensaver-clockbox {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* With the logo drifting across it, a full-strength clock turns both into an
+   unreadable tangle. */
+.cog-screensaver-clockbox.has-logo {
+  opacity: 0.3;
+}
+
+.cog-screensaver-time {
+  font-size: clamp(64px, 22vw, 180px);
+  font-weight: 200;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.cog-screensaver-date {
+  font-size: clamp(16px, 4vw, 28px);
+  font-weight: 300;
+  color: #8a9296;
+}
+
+/* Positioned by JS via transform — cheaper than animating left/top, and it
+   stays on the compositor. */
+.cog-screensaver-logo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(160px, 26vw, 300px);
+  will-change: transform, filter;
+  transition: filter 240ms linear;
+}
+
+.cog-screensaver-logo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #cog-screensaver,
+  #cog-screensaver.is-visible {
+    transition-duration: 1ms;
+  }
+  .cog-screensaver-logo {
+    transition: none;
+  }
+}

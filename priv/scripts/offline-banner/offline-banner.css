@@ -1,0 +1,43 @@
+/* A toast rather than a full-width bar: the top edge already belongs to the
+   status bar, and two strips stacked there clipped each other. The offset
+   below is set from JS when a status bar announces itself. */
+
+#cog-offline-banner {
+  position: fixed;
+  top: calc(var(--cog-offline-offset, 0px) + 12px);
+  left: 50%;
+  z-index: 2147483644;
+
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 9px 16px;
+  border-radius: 6px;
+
+  background: #a3372b;
+  color: #fff;
+
+  font-family: system-ui, -apple-system, "Liberation Sans", sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+
+  /* Informational only — never intercept a tap meant for the app. */
+  pointer-events: none;
+
+  opacity: 0;
+  transform: translate(-50%, -12px);
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
+}
+
+#cog-offline-banner.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #cog-offline-banner {
+    transition-duration: 1ms;
+  }
+}

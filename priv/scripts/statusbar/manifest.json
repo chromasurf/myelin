@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Status Bar",
+  "version": "1.0",
+  "description": "A fixed bar across the top with clock, URL and connection state. Claims the top edge, as navbar does — run one.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "statusbar.js"
+      ],
+      "css": [
+        "statusbar.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

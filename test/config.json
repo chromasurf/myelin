@@ -1,0 +1,23 @@
+{
+  "trusted_origins": ["http://127.0.0.1:8899"],
+
+  "scripts": {
+    "keyboard": {
+      "enabled": true,
+      "skip": ["^localhost$", "^10\\.", "^192\\.168\\."]
+    },
+    "screensaver": {
+      "enabled": true,
+      "idle": 99999,
+      "canary": "cog-canary-2f8a"
+    },
+    "navbar": { "enabled": true, "home": "/test/harness.html" },
+    "probe-field": { "enabled": true },
+    "domain-block": {
+      "allowlist": ["127.0.0.1:8899"],
+      "home": "/test/harness.html",
+      "message": "This page is not part of the terminal."
+    },
+    "display-lock": { "pin": 4711 }
+  }
+}

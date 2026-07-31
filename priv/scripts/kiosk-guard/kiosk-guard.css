@@ -1,0 +1,24 @@
+/* Applied by kiosk-guard.js via classes on <html>, so each guard can be
+   switched off individually through cog-kiosk-guard-allow. */
+
+.cog-guard-no-select,
+.cog-guard-no-select * {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Editing stays possible — suppressing selection inside a text field would
+   make correcting a typo needlessly hard. */
+.cog-guard-no-select input,
+.cog-guard-no-select textarea,
+.cog-guard-no-select [contenteditable],
+.cog-guard-no-select [contenteditable] * {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.cog-guard-no-cursor,
+.cog-guard-no-cursor * {
+  cursor: none !important;
+}

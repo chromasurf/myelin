@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Probe Field",
+  "version": "1.0",
+  "description": "Two fields to tap, so both keyboard layouts have something to write into.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "probe-field.js"
+      ],
+      "shadow_css": [
+        "probe-field.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

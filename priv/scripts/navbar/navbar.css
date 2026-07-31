@@ -1,0 +1,345 @@
+/*
+ * navbar.css — two things about this file before the rules.
+ *
+ * 1. Every selector is anchored on #cog-navbar. An ID beats any class rule the
+ *    visited page has, and that is the whole defence available without a shadow
+ *    root. The four !important below are for declarations pages set globally
+ *    rather than per element: box-sizing through *, the focus outline through
+ *    *:focus, and position/z-index through layout resets. Everything else wins
+ *    on specificity alone.
+ *
+ * 2. The font is a base64 woff2, subset to what a URL and a German label need.
+ *    url() to a file cannot work — our files never go over HTTP, so there is no
+ *    base to resolve against — and fonts.googleapis.com is worse: a kiosk is
+ *    usually offline, and a foreign page's font-src would refuse it. On a page
+ *    whose CSP names font-src without data:, this face is dropped and the
+ *    fallback chain carries the bar. That is why nothing here is measured in
+ *    characters and no icon is a glyph.
+ *
+ *    Regenerate with (fonttools + brotli):
+ *
+ *      pyftsubset IBMPlexMono-Regular.ttf \
+ *        --unicodes=U+0020-007E,U+00A0,U+00B7,U+00C4,U+00D6,U+00DC,U+00E4,U+00F6,U+00FC,U+00DF,U+2013 \
+ *        --layout-features= --no-hinting --flavor=woff2 --output-file=plex400.woff2
+ *      base64 -i plex400.woff2
+ *
+ *    IBM Plex Mono, © 2017 IBM Corp, SIL OFL 1.1 — font/OFL-IBMPlexMono.txt.
+ */
+
+@font-face {
+  font-family: CogMono;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(data:font/woff2;base64,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) format("woff2");
+}
+
+@font-face {
+  font-family: CogMono;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(data:font/woff2;base64,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) format("woff2");
+}
+
+/* Pages set box-sizing through a * rule, which reaches into here and would
+   otherwise decide whether our borders are inside or outside every box.
+
+   The rest of this block is the lesson from measuring against a hostile page: an
+   ID selector only wins for what it actually says, so a property we stay silent
+   about is the page's. A plain `div { opacity: .8 }` made the whole bar
+   translucent, and `span { float: right }` tore the hairlines out of the row —
+   neither needed !important to do it. domain-block hit the same wall in a shadow
+   root. transform is deliberately not in here: the icons are built from it. */
+#cog-navbar,
+#cog-navbar *,
+#cog-navbar *::before,
+#cog-navbar *::after {
+  box-sizing: border-box !important;
+  float: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+  max-width: none;
+  min-width: 0;
+  min-height: 0;
+}
+
+#cog-navbar {
+  --cog-nav-bg: #14171a;
+  --cog-nav-fg: #e8ecee;
+  --cog-nav-dim: #7d8a91;
+  --cog-nav-line: #2a3035;
+  --cog-nav-accent: #42a7c6;
+  --cog-nav-field: #0d1013;
+  --cog-nav-press: rgba(232, 236, 238, 0.1);
+  --cog-nav-font: CogMono, "Liberation Mono", "DejaVu Sans Mono", monospace;
+
+  /* A layout reset in the page can move a fixed element or bury it. */
+  position: fixed !important;
+  inset: 0 auto auto 0 !important;
+  width: 100% !important;
+  z-index: 2147483644 !important; /* with statusbar: under the keyboard, over the page */
+
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: var(--cog-nav-h, 48px);
+  margin: 0;
+  padding: 0 4px;
+
+  background: var(--cog-nav-bg);
+  border-bottom: 1px solid var(--cog-nav-line);
+  box-shadow: none;
+
+  font-family: var(--cog-nav-font);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--cog-nav-fg);
+  text-align: left;
+  text-transform: none;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  transform: translateY(-100%);
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), height 180ms ease-out;
+}
+
+#cog-navbar.is-in {
+  transform: translateY(0);
+}
+
+/* Light: the default follows the panel, an explicit theme wins over it. */
+@media (prefers-color-scheme: light) {
+  #cog-navbar:not(.cog-nav-dark) {
+    --cog-nav-bg: #f1f4f5;
+    --cog-nav-fg: #14171a;
+    --cog-nav-dim: #6a757b;
+    --cog-nav-line: #d2d8db;
+    --cog-nav-field: #ffffff;
+    --cog-nav-press: rgba(20, 23, 26, 0.08);
+  }
+}
+
+#cog-navbar.cog-nav-light {
+  --cog-nav-bg: #f1f4f5;
+  --cog-nav-fg: #14171a;
+  --cog-nav-dim: #6a757b;
+  --cog-nav-line: #d2d8db;
+  --cog-nav-field: #ffffff;
+  --cog-nav-press: rgba(20, 23, 26, 0.08);
+}
+
+/* `*:focus { outline: none }` is in almost every stylesheet, and a kiosk whose
+   focus is invisible cannot be operated. */
+#cog-navbar :focus-visible {
+  outline: 2px solid var(--cog-nav-accent) !important;
+  outline-offset: -2px !important;
+}
+
+/* --- buttons ------------------------------------------------------------- */
+
+#cog-navbar .cog-nav-btn {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(var(--cog-nav-h, 48px) - 4px);
+  height: calc(var(--cog-nav-h, 48px) - 4px);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--cog-nav-fg);
+
+  font: inherit;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+
+#cog-navbar .cog-nav-btn:active {
+  background: var(--cog-nav-press);
+}
+
+/* Every icon is drawn. The kiosk images ship Liberation, which has no glyph for
+   ⌂ ⟳ ▸ — they would render as tofu boxes, which is why keyboard writes words
+   instead of pictographs. Geometry needs no font at all. */
+
+/* Home: a roof over a body. */
+#cog-navbar .cog-nav-home::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 8px);
+  transform: translateX(-50%);
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-bottom: 8px solid currentColor;
+}
+
+#cog-navbar .cog-nav-home::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 8px;
+  border: 2px solid currentColor;
+  border-top: 0;
+}
+
+/* Reload: a ring with a quarter missing, and an arrowhead where it ends. */
+#cog-navbar .cog-nav-reload::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  transform: rotate(45deg);
+  transition: transform 320ms ease-out;
+}
+
+#cog-navbar .cog-nav-reload::after {
+  content: "";
+  position: absolute;
+  left: calc(50% + 3px);
+  top: calc(50% - 11px);
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-bottom: 5px solid currentColor;
+  transform: rotate(105deg);
+}
+
+#cog-navbar .cog-nav-reload:active::before {
+  transform: rotate(405deg);
+}
+
+/* Go: a chevron from two borders. */
+#cog-navbar .cog-nav-go::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border: 2px solid currentColor;
+  border-left: 0;
+  border-bottom: 0;
+  transform: translate(-65%, -50%) rotate(45deg);
+}
+
+/* --- the address field --------------------------------------------------- */
+
+#cog-navbar .cog-nav-sep {
+  flex: 0 0 auto;
+  display: block;
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  padding: 0;
+  border: 0;
+  background: var(--cog-nav-line);
+}
+
+/* Pages restyle inputs harder than anything else — appearance, radius, font and
+   margin all come back explicitly. */
+#cog-navbar .cog-nav-url {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: calc(var(--cog-nav-h, 48px) - 18px);
+  margin: 0 2px !important;
+  padding: 0 9px;
+
+  border: 1px solid var(--cog-nav-line);
+  border-radius: 3px;
+  background: var(--cog-nav-field);
+  color: var(--cog-nav-fg);
+  box-shadow: none;
+
+  font-family: var(--cog-nav-font) !important;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
+  text-overflow: ellipsis;
+
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  outline-offset: -2px;
+  transition: border-color 120ms ease-out;
+}
+
+#cog-navbar .cog-nav-url:focus {
+  border-color: var(--cog-nav-accent);
+}
+
+#cog-navbar .cog-nav-url::placeholder {
+  color: var(--cog-nav-dim);
+  opacity: 1;
+}
+
+/* --- collapsed ----------------------------------------------------------- */
+
+#cog-navbar .cog-nav-collar {
+  display: none;
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#cog-navbar.is-collapsed {
+  height: var(--cog-nav-collapsed, 6px);
+  padding: 0;
+  border-bottom-color: transparent;
+}
+
+#cog-navbar.is-collapsed > *:not(.cog-nav-collar) {
+  display: none;
+}
+
+#cog-navbar.is-collapsed .cog-nav-collar {
+  display: block;
+}
+
+/* The one mark left when the bar is away: enough to aim a finger at, not enough
+   to be furniture. */
+#cog-navbar.is-collapsed .cog-nav-collar::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--cog-nav-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #cog-navbar,
+  #cog-navbar * {
+    transition-duration: 1ms !important;
+  }
+}

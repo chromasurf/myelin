@@ -1,0 +1,22 @@
+/_build/
+/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+*.beam
+/.elixir_ls/
+
+# ExUnit's :tmp_dir tag lands here — the install task's tests copy into it.
+/tmp/
+
+# Build output of the native extension
+/priv/webext/
+/c_src/*.o
+/test/c/run
+/test/c/*.o
+/test/c/run.dSYM/
+
+# Generated from c_src/cog_prelude.js on every build
+/c_src/generated/

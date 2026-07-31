@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Onscreen Keyboard",
+  "version": "1.0",
+  "description": "Touch keyboard that slides in on focus — letters, or a keypad for a number field.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "keyboard.js"
+      ],
+      "css": [
+        "keyboard.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

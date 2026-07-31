@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Status Bar (LiveView)",
+  "version": "1.0",
+  "description": "Embeds a LiveView served by the firmware app as a status bar. Cannot work on a foreign https page.",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "statusbar-liveview.js"
+      ],
+      "css": [
+        "statusbar-liveview.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}
