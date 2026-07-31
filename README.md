@@ -572,25 +572,44 @@ config :esbuild,
   }
   ```
 
-**3. Tailwind.** Two settings are not optional here, because the CSS is injected into
-someone else's page:
+**3. Tailwind.** Three settings are not optional here, because the CSS is injected
+into someone else's page. All three go in the stylesheet on v4:
+
+```css
+@layer theme, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(myelin);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(myelin) source(none);
+
+@source "../js/myelin/**/*.{js,ts}";
+```
 
 - **No preflight.** The reset (`*, ::before, ::after { box-sizing: border-box; margin:
   0 }`, heading sizes, `img { display: block }`) would land on `apple.com` as readily
-  as on your own app. Tailwind v4: import `tailwindcss/theme` and
-  `tailwindcss/utilities` only, never the collected `tailwindcss`. v3:
+  as on your own app. So `theme` and `utilities` are imported by themselves and
+  `preflight.css` is left out; never the collected `tailwindcss`. v3:
   `corePlugins: { preflight: false }`.
 - **A prefix.** `.flex`, `.p-4` and `.fixed` collide in both directions with whatever
-  the visited page defines. v4: `@import "tailwindcss" prefix(myelin)`. v3:
-  `prefix: "myelin-"`. It also matches the convention the shipped scripts use —
-  `myelin-osk`, `myelin-screensaver`, `myelin-debug-row`.
+  the visited page defines. Note the separator: v4 spells a prefixed utility
+  `myelin:flex`, with a colon — unlike v3's `prefix: "myelin-"`, which produced
+  `myelin-flex`. Neither is the convention the shipped scripts use for their own
+  class names (`myelin-osk`, `myelin-screensaver`), and they do not collide with it.
+- **`source(none)`, on v4.** Automatic content detection scans the whole project,
+  and `@source` *adds* to that rather than replacing it — so without this every
+  class from your Phoenix pages is bundled into the stylesheet injected on every
+  foreign page. Point the `@source` glob at the script sources
+  (`assets/js/myelin/**/*.{js,ts}`), not at the esbuild output.
 
-Point the content glob at the sources (`assets/js/myelin/**/*.{js,ts}`), not at
-the esbuild output. Tailwind and esbuild are independent; the order does not matter
-as long as the glob sees the source.
+Tailwind and esbuild are independent; the order does not matter as long as the glob
+sees the source.
 
-Watch the size. Without preflight and with a tight glob it is a few KB; with a glob
-that catches `deps/**` it is hundreds — injected into every page, on every load.
+Watch the size. With no preflight, a prefix and a tight glob it is a few KB; with
+automatic detection loose across a Phoenix app it is tens, injected into every page
+on every load.
+
+One thing in the output looks like preflight and is not: v4 emits a `*, ::before,
+::after, ::backdrop` block inside `@layer properties`, wrapped in `@supports`. It
+sets nothing but `--tw-*` custom properties — a fallback for browsers without
+`@property` — so it changes nothing visible on a page you do not own.
 
 **Not under `priv/static`.** `phx.digest` would put a content hash in the filename
 and the manifest would no longer find them.
