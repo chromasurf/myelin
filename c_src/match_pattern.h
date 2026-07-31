@@ -22,8 +22,8 @@
  * when it does not, any port matches.
  */
 
-#ifndef CUS_MATCH_PATTERN_H
-#define CUS_MATCH_PATTERN_H
+#ifndef MYL_MATCH_PATTERN_H
+#define MYL_MATCH_PATTERN_H
 
 #include <stdbool.h>
 
@@ -34,24 +34,24 @@ typedef struct {
     char *path;        /* glob, "*" is the only wildcard; never NULL */
     bool subdomains;   /* pattern host started with "*." */
     bool all_urls;     /* pattern was "<all_urls>" */
-} CusMatchPattern;
+} MylMatchPattern;
 
 /* Parses `pattern` into `out`. Returns false and leaves `out` untouched on a
  * malformed pattern. On success the caller owns the strings in `out` and must
- * release them with cus_match_pattern_clear(). */
-bool cus_match_pattern_parse(const char *pattern, CusMatchPattern *out);
+ * release them with myl_match_pattern_clear(). */
+bool myl_match_pattern_parse(const char *pattern, MylMatchPattern *out);
 
 /* Frees the strings owned by `p` and zeroes it. Safe on an all-zero struct. */
-void cus_match_pattern_clear(CusMatchPattern *p);
+void myl_match_pattern_clear(MylMatchPattern *p);
 
 /* True when `url` satisfies `p`. Scheme and host compare case-insensitively,
  * the path compares case-sensitively. Any URL fragment is ignored; the query
  * string is part of the path for matching purposes, as in Chrome. */
-bool cus_match_pattern_matches(const CusMatchPattern *p, const char *url);
+bool myl_match_pattern_matches(const MylMatchPattern *p, const char *url);
 
 /* True when `text` matches `glob`, where "*" stands for any run of characters
  * (including none) and every other character is literal. Exposed for tests. */
-bool cus_glob_match(const char *glob, const char *text);
+bool myl_glob_match(const char *glob, const char *text);
 
 /* Splits `url` into its parts. The host excludes userinfo and port and is
  * lowercased; `*port_out` is NULL when the URL names none. The path runs to the
@@ -61,7 +61,7 @@ bool cus_glob_match(const char *glob, const char *text);
  *
  * Exposed so the origin check in config.c takes the same apart the same way,
  * rather than growing a second parser that disagrees at the edges. */
-bool cus_split_url(const char *url, char **scheme_out, char **host_out,
+bool myl_split_url(const char *url, char **scheme_out, char **host_out,
                    char **port_out, char **path_out);
 
-#endif /* CUS_MATCH_PATTERN_H */
+#endif /* MYL_MATCH_PATTERN_H */

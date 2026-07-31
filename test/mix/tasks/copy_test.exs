@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.CogUserscripts.CopyTest do
+defmodule Mix.Tasks.Myelin.CopyTest do
   # Not async: the task writes into a directory and reads Mix.shell().
   use ExUnit.Case, async: false
 
@@ -15,7 +15,7 @@ defmodule Mix.Tasks.CogUserscripts.CopyTest do
     :ok
   end
 
-  defp run(args), do: Mix.Tasks.CogUserscripts.Copy.run(args)
+  defp run(args), do: Mix.Tasks.Myelin.Copy.run(args)
 
   defp output do
     receive do
@@ -61,7 +61,7 @@ defmodule Mix.Tasks.CogUserscripts.CopyTest do
       File.cd!(tmp, fn -> run(["--list"]) end)
       listed = output()
 
-      assert String.contains?(listed, "config :cog_userscripts")
+      assert String.contains?(listed, "config :myelin")
       assert String.contains?(listed, ~s|"keyboard" => %{enabled: true}|)
     end
   end
@@ -88,7 +88,7 @@ defmodule Mix.Tasks.CogUserscripts.CopyTest do
     end
 
     test "creates the target directory when it does not exist", %{tmp_dir: tmp} do
-      target = Path.join(tmp, "priv/userscripts")
+      target = Path.join(tmp, "priv/myelin")
 
       run(["navbar", "--into", target])
 
@@ -129,7 +129,7 @@ defmodule Mix.Tasks.CogUserscripts.CopyTest do
     end
 
     test "an unknown name fails with the list of what there is", %{tmp_dir: tmp} do
-      assert_raise Mix.Error, ~r/no userscript called "nope"/, fn ->
+      assert_raise Mix.Error, ~r/no script called "nope"/, fn ->
         run(["nope", "--into", tmp])
       end
     end
@@ -137,7 +137,7 @@ defmodule Mix.Tasks.CogUserscripts.CopyTest do
     test "an idea is not copyable, because it does not ship", %{tmp_dir: tmp} do
       # ideas/ is in the repository to be read, not in the package. A task that
       # offered to copy one would be offering something a dependency cannot reach.
-      assert_raise Mix.Error, ~r/no userscript called "konami"/, fn ->
+      assert_raise Mix.Error, ~r/no script called "konami"/, fn ->
         run(["konami", "--into", tmp])
       end
     end
@@ -146,17 +146,17 @@ defmodule Mix.Tasks.CogUserscripts.CopyTest do
       run(["navbar", "--into", tmp])
       printed = output()
 
-      assert String.contains?(printed, "cog_env")
+      assert String.contains?(printed, "browser_env")
       assert String.contains?(printed, ~s|"navbar" => %{enabled: true}|)
     end
 
     test "the reminder names app_dir for a relative target", %{tmp_dir: tmp} do
       # Run from elsewhere, or a relative --into would write into the real project.
-      File.cd!(tmp, fn -> run(["navbar", "--into", "priv/userscripts"]) end)
+      File.cd!(tmp, fn -> run(["navbar", "--into", "priv/myelin"]) end)
 
       printed = output()
       assert String.contains?(printed, ~s|Application.app_dir(|)
-      assert String.contains?(printed, "priv/userscripts")
+      assert String.contains?(printed, "priv/myelin")
     end
 
     test "and prints an absolute target as it is", %{tmp_dir: tmp} do

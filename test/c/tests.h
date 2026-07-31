@@ -5,8 +5,8 @@
  * tests should run on a development machine with nothing installed.
  */
 
-#ifndef CUS_TESTS_H
-#define CUS_TESTS_H
+#ifndef MYL_TESTS_H
+#define MYL_TESTS_H
 
 #include <stdio.h>
 #include <string.h>
@@ -40,4 +40,4 @@ void test_match_pattern(void);
 void test_manifest(void);
 void test_config(void);
 
-#endif /* CUS_TESTS_H */
+#endif /* MYL_TESTS_H */

@@ -1,6 +1,6 @@
-defmodule CogUserscripts do
+defmodule Myelin do
   @moduledoc """
-  Wires the userscript extension into a Cog command line.
+  Wires the web process extension into the kiosk browser's command line.
 
   There is no process and no supervision tree here — the whole runtime lives in
   the web process extension that Cog loads. This module answers three questions
@@ -9,11 +9,11 @@ defmodule CogUserscripts do
 
   ## Usage
 
-  Merge two things into however you already start Cog — `cog_args/0` for the
-  command line, `cog_env/1` for the environment:
+  Merge two things into however you already start the browser —
+  `browser_args/0` for the command line, `browser_env/1` for the environment:
 
-      args = ["--platform=drm", url] ++ CogUserscripts.cog_args()
-      env = [{"XDG_RUNTIME_DIR", runtime_dir}] ++ CogUserscripts.cog_env()
+      args = ["--platform=drm", url] ++ Myelin.browser_args()
+      env = [{"XDG_RUNTIME_DIR", runtime_dir}] ++ Myelin.browser_env()
 
       MuonTrap.Daemon.start_link("cog", args, env: env)
 
@@ -26,32 +26,32 @@ defmodule CogUserscripts do
   on the search path — but every one of them is dormant. Switching one on is a
   line of configuration, and that is the whole install:
 
-      config :cog_userscripts,
+      config :myelin,
         scripts: %{
           "keyboard" => %{enabled: true},
           "screensaver" => %{enabled: true}
         }
 
   Copy one into your own application only when you want to change it —
-  `mix cog_userscripts.copy keyboard` — and the copy replaces the shipped version,
+  `mix myelin.copy keyboard` — and the copy replaces the shipped version,
   because later entries on the search path win.
 
   ## Configuration
 
   Two things are set per device, both read from your application's config:
 
-      config :cog_userscripts,
+      config :myelin,
         trusted_origins: ["http://localhost:4000"],
         scripts: %{"screensaver" => %{enabled: true, idle: 300}}
 
   The keys under `scripts` are directory names.
 
-  `trusted_origins` decides where `<meta name="cog-…">` tags may configure
+  `trusted_origins` decides where `<meta name="myelin-…">` tags may configure
   anything. It starts empty, so on a page you have not listed the device
   configuration is the only thing that counts — which is the point on a kiosk that
   visits pages you do not control.
 
-  Both travel to the extension in `COG_USERSCRIPTS_CONFIG`. That is not a
+  Both travel to the extension in `MYELIN_CONFIG`. That is not a
   flourish: the extension runs in Cog's web process, not on the BEAM, so it
   cannot call `Application.get_env/2`. A file or the process environment are the
   only two channels, and a file would mean writing one at boot.
@@ -64,11 +64,11 @@ defmodule CogUserscripts do
   # would otherwise compile fine and fail at runtime with an undefined function,
   # somewhere inside a firmware image.
   if not Code.ensure_loaded?(:json) do
-    raise "cog_userscripts needs OTP 27 or newer (for :json), found OTP " <>
+    raise "myelin needs OTP 27 or newer (for :json), found OTP " <>
             List.to_string(:erlang.system_info(:otp_release))
   end
 
-  @extension_name "libcog_userscripts.so"
+  @extension_name "libmyelin.so"
 
   @doc """
   Directory to pass to Cog's `--web-extensions-dir`.
@@ -97,7 +97,7 @@ defmodule CogUserscripts do
   It is on the search path already, so switching one on takes configuration and
   nothing else:
 
-      config :cog_userscripts, scripts: %{"keyboard" => %{enabled: true}}
+      config :myelin, scripts: %{"keyboard" => %{enabled: true}}
   """
   @spec bundled_dir() :: String.t()
   def bundled_dir, do: Path.join(priv_dir(), "scripts")
@@ -107,37 +107,39 @@ defmodule CogUserscripts do
 
   `bundled_dir/0` comes first, then anything you configure, then anything you
   pass. So a copy of a shipped script in your own application replaces the
-  shipped one, which is what `mix cog_userscripts.copy` is for:
+  shipped one, which is what `mix myelin.copy` is for:
 
-      config :cog_userscripts, extra_dirs: ["/opt/my_app/userscripts"]
+      config :myelin, extra_dirs: ["/opt/my_app/myelin"]
 
-      CogUserscripts.script_path(extra: [Application.app_dir(:my_app, "priv/userscripts")])
+      Myelin.script_path(extra: [Application.app_dir(:my_app, "priv/myelin")])
 
   To iterate on a device without a firmware build — `scp` a script over, restart
   Cog — add the writable partition:
 
-      config :cog_userscripts, extra_dirs: ["/data/cog-userscripts"]
+      config :myelin, extra_dirs: ["/data/myelin"]
   """
   @spec script_path(keyword()) :: [String.t()]
   def script_path(opts \\ []) do
-    configured = Application.get_env(:cog_userscripts, :extra_dirs, [])
+    configured = Application.get_env(:myelin, :extra_dirs, [])
 
     [bundled_dir()] ++ configured ++ Keyword.get(opts, :extra, [])
   end
 
   @doc """
-  Arguments to append to Cog's command line.
+  Arguments to append to the kiosk browser's command line.
+
+  With Cog that is `--web-extensions-dir=…`, pointed at `extension_dir/0`.
 
   Returns `[]` when the extension is not built, so a host build does not point
-  Cog at a directory that does not exist.
+  the browser at a directory that does not exist.
   """
-  @spec cog_args() :: [String.t()]
-  def cog_args do
+  @spec browser_args() :: [String.t()]
+  def browser_args do
     if available?() do
       ["--web-extensions-dir=#{extension_dir()}"]
     else
       Logger.warning(
-        "[CogUserscripts] #{extension_path()} is missing — no userscripts will load. " <>
+        "[Myelin] #{extension_path()} is missing — no scripts will load. " <>
           "Expected on MIX_TARGET=host; on a device it means the native build did not run."
       )
 
@@ -151,7 +153,7 @@ defmodule CogUserscripts do
   Contains only what is actually set, so an application that configures nothing
   gets `%{}`. Useful for seeing what a release will hand over:
 
-      mix run -e 'IO.inspect CogUserscripts.config()'
+      mix run -e 'IO.inspect Myelin.config()'
   """
   @spec config() :: map()
   def config do
@@ -161,22 +163,22 @@ defmodule CogUserscripts do
   end
 
   @doc """
-  Environment to merge into Cog's.
+  Environment to merge into the kiosk browser's.
 
   Takes the same `:extra` option as `script_path/1`:
 
-      CogUserscripts.cog_env(extra: [Application.app_dir(:my_app, "priv/userscripts")])
+      Myelin.browser_env(extra: [Application.app_dir(:my_app, "priv/myelin")])
 
   Two variables:
 
-  * `COG_USERSCRIPTS_PATH` — the search path from `script_path/1`, colon
+  * `MYELIN_PATH` — the search path from `script_path/1`, colon
     separated. Always set, because the bundled scripts are always on it.
-  * `COG_USERSCRIPTS_CONFIG` — `config/0` as JSON, when anything is configured.
+  * `MYELIN_CONFIG` — `config/0` as JSON, when anything is configured.
 
   Reading is all this does: no file is written, nothing is created, no process
   starts.
 
-  Also set `{"G_MESSAGES_DEBUG", "cog-userscripts"}` to have the extension log
+  Also set `{"G_MESSAGES_DEBUG", "myelin"}` to have the extension log
   which manifests it found and which scripts it injected.
 
   > #### OTP 27 {: .info}
@@ -184,9 +186,9 @@ defmodule CogUserscripts do
   > The JSON is encoded with `:json`, which arrived in OTP 27. That keeps this
   > library free of a JSON dependency; the cost is the floor.
   """
-  @spec cog_env(keyword()) :: [{String.t(), String.t()}]
-  def cog_env(opts \\ []) do
-    path = [{"COG_USERSCRIPTS_PATH", Enum.join(script_path(opts), ":")}]
+  @spec browser_env(keyword()) :: [{String.t(), String.t()}]
+  def browser_env(opts \\ []) do
+    path = [{"MYELIN_PATH", Enum.join(script_path(opts), ":")}]
 
     case config() do
       empty when empty == %{} ->
@@ -194,14 +196,14 @@ defmodule CogUserscripts do
 
       config ->
         case encode_json(config) do
-          {:ok, json} -> path ++ [{"COG_USERSCRIPTS_CONFIG", json}]
+          {:ok, json} -> path ++ [{"MYELIN_CONFIG", json}]
           :error -> path
         end
     end
   end
 
   defp put_configured(map, key, empty) do
-    value = normalize(Application.get_env(:cog_userscripts, key, empty))
+    value = normalize(Application.get_env(:myelin, key, empty))
 
     # `[]` is how Elixir spells both "empty list" and "empty keyword list", so for
     # a key whose default is a map it means "nothing configured" too.
@@ -247,7 +249,7 @@ defmodule CogUserscripts do
   end
 
   # Called while the caller is still building its supervision tree, which is why
-  # this cannot raise: a `config :cog_userscripts` value that `:json` will not
+  # this cannot raise: a `config :myelin` value that `:json` will not
   # take would otherwise propagate out of `init/1`, the supervisor would give up,
   # and the device would boot to a black panel with no browser at all. The
   # extension goes to lengths to keep a malformed configuration from doing that —
@@ -266,9 +268,9 @@ defmodule CogUserscripts do
 
   defp encode_failed(detail) do
     Logger.error(
-      "[CogUserscripts] the device configuration cannot be encoded as JSON " <>
-        "(#{detail}) — COG_USERSCRIPTS_CONFIG will not be set and every script " <>
-        "keeps its manifest defaults. Check `config :cog_userscripts` for a value " <>
+      "[Myelin] the device configuration cannot be encoded as JSON " <>
+        "(#{detail}) — MYELIN_CONFIG will not be set and every script " <>
+        "keeps its manifest defaults. Check `config :myelin` for a value " <>
         "that is not a map, list, string, number or boolean."
     )
 
@@ -276,9 +278,9 @@ defmodule CogUserscripts do
   end
 
   defp priv_dir do
-    case :code.priv_dir(:cog_userscripts) do
+    case :code.priv_dir(:myelin) do
       {:error, :bad_name} ->
-        raise "the :cog_userscripts application is not loaded"
+        raise "the :myelin application is not loaded"
 
       path ->
         List.to_string(path)

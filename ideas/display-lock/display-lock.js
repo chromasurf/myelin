@@ -41,7 +41,7 @@ var idleTimer = null;
 // `div { display: inline }` from the page underneath is enough to take it
 // apart. It cuts both ways — nothing in here reaches the page either.
 var overlay = document.createElement("div");
-overlay.id = "cog-lock";
+overlay.id = "myelin-lock";
 
 var root = overlay.attachShadow({ mode: "open" });
 
@@ -55,34 +55,34 @@ root.appendChild(style);
 // announced from outside the shadow boundary, where the content they describe
 // is not reachable.
 var dialog = document.createElement("div");
-dialog.className = "cog-lock-root";
+dialog.className = "myelin-lock-root";
 dialog.setAttribute("role", "dialog");
 dialog.setAttribute("aria-modal", "true");
 dialog.setAttribute("aria-label", MESSAGE);
 
 var box = document.createElement("div");
-box.className = "cog-lock-box";
+box.className = "myelin-lock-box";
 
 var title = document.createElement("div");
-title.className = "cog-lock-title";
+title.className = "myelin-lock-title";
 title.textContent = MESSAGE;
 
 var dots = document.createElement("div");
-dots.className = "cog-lock-dots";
+dots.className = "myelin-lock-dots";
 
 var hint = document.createElement("div");
-hint.className = "cog-lock-hint";
+hint.className = "myelin-lock-hint";
 
 var pad = document.createElement("div");
-pad.className = "cog-lock-pad";
+pad.className = "myelin-lock-pad";
 
 ["1", "2", "3", "4", "5", "6", "7", "8", "9", "clear", "0", "ok"].forEach(function (key) {
   var el = document.createElement("div");
   el.setAttribute("role", "button");
-  el.className = "cog-lock-key";
+  el.className = "myelin-lock-key";
   el.dataset.key = key;
   el.textContent = key === "clear" ? "C" : key === "ok" ? "OK" : key;
-  if (key === "clear" || key === "ok") el.classList.add("cog-lock-key-special");
+  if (key === "clear" || key === "ok") el.classList.add("myelin-lock-key-special");
   pad.appendChild(el);
 });
 
@@ -106,7 +106,7 @@ function renderDots() {
 
   for (var i = 0; i < count; i++) {
     var dot = document.createElement("span");
-    dot.className = "cog-lock-dot" + (i < entered.length ? " is-filled" : "");
+    dot.className = "myelin-lock-dot" + (i < entered.length ? " is-filled" : "");
     dots.appendChild(dot);
   }
 }
@@ -116,18 +116,18 @@ function renderHint() {
 
   if (left > 0) {
     hint.textContent = "Too many attempts — " + left + "s";
-    hint.className = "cog-lock-hint is-error";
+    hint.className = "myelin-lock-hint is-error";
     return;
   }
 
   if (attempts > 0) {
     hint.textContent = "Wrong PIN (" + attempts + "/" + MAX_ATTEMPTS + ")";
-    hint.className = "cog-lock-hint is-error";
+    hint.className = "myelin-lock-hint is-error";
     return;
   }
 
   hint.textContent = "";
-  hint.className = "cog-lock-hint";
+  hint.className = "myelin-lock-hint";
 }
 
 function lock() {
@@ -218,7 +218,7 @@ root.addEventListener("pointerdown", function (event) {
 });
 
 root.addEventListener("click", function (event) {
-  var key = event.target.closest(".cog-lock-key");
+  var key = event.target.closest(".myelin-lock-key");
   if (key) press(key.dataset.key);
 });
 

@@ -29,12 +29,12 @@ not the API — a WebKit change is still something only a device build finds.
 ## Trying a change without a device
 
 ```bash
-mix cog_userscripts.harness
+mix myelin.harness
 open http://127.0.0.1:8899/test/harness.html
 ```
 
 The harness wraps each script the way the extension does — same prelude, same
-`cog` argument — so what runs in the browser is what runs on a device. Settings
+`ctx` argument — so what runs in the browser is what runs on a device. Settings
 come from `test/config.json` and from query parameters that become meta tags.
 `?trusted=0` puts it in the foreign-page state. See *Development* in the README
 for the details.
@@ -58,17 +58,17 @@ the code they constrain. Read that before changing it.
 ## Style
 
 - `mix format` for Elixir. The C is hand-formatted; match the file you are in.
-- Userscripts are ES5-compatible plain JS, no build step, no dependencies. They are
+- Scripts are ES5-compatible plain JS, no build step, no dependencies. They are
   meant to be read and reworked by whoever copies them, so clarity beats brevity.
 - User-facing strings are English, and configurable where that is reasonable.
 
-## Adding a userscript
+## Adding a script
 
-A userscript is a plain `.js` file whose body is the script — the loader wraps it in a
+A script is a plain `.js` file whose body is the script — the loader wraps it in a
 function, so there is no IIFE to write and no `"use strict"` to declare. Settings come
 from `ctx.config(name, default)`, events from `ctx.on` and `ctx.emit`, and everything
 else from the DOM. Read `priv/scripts/kiosk-guard` for the shortest whole example, and
-*Writing a userscript* in the README for the rest.
+*Writing a script* in the README for the rest.
 
 What *is* fixed is the header: a title line, a paragraph saying what it does and why,
 `Configuration` as a table of name, meaning and default, and `Events` listing what it

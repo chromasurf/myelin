@@ -9,8 +9,9 @@
  * Both fields sit in one shadow root, which is the case worth having: focusin
  * bubbles out of a shadow root only when focus *enters* it, so moving from one field
  * inside to the other dispatches nothing outside the tree at all. Tap the number
- * field, then the text field — that is what ctx.onFocus exists for, and it is also
- * the pair that shows the keyboard changing layout without going away in between.
+ * field, then the text field — that is the case the keyboard's own focus tracking has
+ * to catch, and it is also the pair that shows the keyboard changing layout without
+ * going away in between.
  *
  * Pinned top right, because the bottom belongs to the keyboard. Give it a `left`
  * and that wins.
@@ -22,7 +23,7 @@
  */
 
 var host = document.createElement("div");
-host.id = "cog-probe-field";
+host.id = "myelin-probe-field";
 host.style.top = ctx.config("top", "180px");
 
 var left = ctx.config("left", "");

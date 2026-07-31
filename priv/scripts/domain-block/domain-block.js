@@ -34,7 +34,7 @@
  *   emits   domain-block:blocked — carries the host
  */
 
-var ELEMENT_ID = "cog-domain-block";
+var ELEMENT_ID = "myelin-domain-block";
 var ALLOWLIST = ctx.config("allowlist", []);
 
 /* --- is this host allowed? -------------------------------------------- */

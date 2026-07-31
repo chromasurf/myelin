@@ -3,16 +3,16 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-static CusLogFunc s_handler;
+static MylLogFunc s_handler;
 static void *s_user_data;
 
-void cus_log_set_handler(CusLogFunc func, void *user_data)
+void myl_log_set_handler(MylLogFunc func, void *user_data)
 {
     s_handler = func;
     s_user_data = user_data;
 }
 
-void cus_log(CusLogLevel level, const char *format, ...)
+void myl_log(MylLogLevel level, const char *format, ...)
 {
     char buffer[1024];
     va_list args;

@@ -1,22 +1,22 @@
-defmodule Mix.Tasks.CogUserscripts.Copy do
-  @shortdoc "Copies a bundled userscript into your application so you can change it"
+defmodule Mix.Tasks.Myelin.Copy do
+  @shortdoc "Copies a bundled script into your application so you can change it"
 
   @moduledoc """
-  Copies a userscript out of the library and into your application.
+  Copies a script out of the library and into your application.
 
   You do not need this to *run* a script. Everything the library ships is already on
   the search path, dormant, and one line of configuration switches it on:
 
-      config :cog_userscripts, scripts: %{"keyboard" => %{enabled: true}}
+      config :myelin, scripts: %{"keyboard" => %{enabled: true}}
 
   Copy one when you want to **change** it. The copy sits later on the search path
   than the bundled version, so it replaces it:
 
-      mix cog_userscripts.copy                          # what there is, and how to switch it on
-      mix cog_userscripts.copy --list                   # the same list
-      mix cog_userscripts.copy navbar statusbar         # into priv/userscripts
-      mix cog_userscripts.copy statusbar --into priv/kiosk_scripts
-      mix cog_userscripts.copy keyboard --force         # overwrite an existing copy
+      mix myelin.copy                          # what there is, and how to switch it on
+      mix myelin.copy --list                   # the same list
+      mix myelin.copy navbar statusbar         # into priv/myelin
+      mix myelin.copy statusbar --into priv/kiosk_scripts
+      mix myelin.copy keyboard --force         # overwrite an existing copy
 
   A copied script is yours: edit it, commit it, and an upgrade will not touch it.
   That is also why an existing directory is left alone unless you pass `--force`.
@@ -24,7 +24,7 @@ defmodule Mix.Tasks.CogUserscripts.Copy do
 
   use Mix.Task
 
-  @default_target "priv/userscripts"
+  @default_target "priv/myelin"
 
   # Which of the bundled scripts are held to a production standard. The rest work and
   # are maintained, but their shape may still change — each one says "Beta." in its
@@ -56,10 +56,10 @@ defmodule Mix.Tasks.CogUserscripts.Copy do
   defp nothing_found do
     Mix.shell().error("""
 
-    No userscript found in #{Path.relative_to_cwd(source_dir())}.
+    No script found in #{Path.relative_to_cwd(source_dir())}.
 
     That directory ships with the library, so an empty one means an incomplete
-    checkout of :cog_userscripts — try mix deps.clean cog_userscripts && mix deps.get.
+    checkout of :myelin — try mix deps.clean myelin && mix deps.get.
     """)
   end
 
@@ -77,7 +77,7 @@ defmodule Mix.Tasks.CogUserscripts.Copy do
     #{config_block(Enum.map(stable, & &1.id))}\
     To change one, copy it first:
 
-        mix cog_userscripts.copy #{List.first(scripts).id}
+        mix myelin.copy #{List.first(scripts).id}
     """)
   end
 
@@ -100,7 +100,7 @@ defmodule Mix.Tasks.CogUserscripts.Copy do
 
     if is_nil(entry) do
       Mix.raise("""
-      no userscript called #{inspect(name)}.
+      no script called #{inspect(name)}.
 
       Available: #{Enum.map_join(scripts, ", ", & &1.id)}
       """)
@@ -139,7 +139,7 @@ defmodule Mix.Tasks.CogUserscripts.Copy do
 
     Your copy replaces the bundled script once that directory is on the search path:
 
-        CogUserscripts.cog_env(extra: [#{search_path_entry(target)}])
+        Myelin.browser_env(extra: [#{search_path_entry(target)}])
 
     And it still has to be switched on:
 
@@ -151,7 +151,7 @@ defmodule Mix.Tasks.CogUserscripts.Copy do
     entries = Enum.map_join(ids, ",\n", &~s|          "#{&1}" => %{enabled: true}|)
 
     """
-        config :cog_userscripts,
+        config :myelin,
           scripts: %{
     #{entries}
           }
@@ -201,5 +201,5 @@ defmodule Mix.Tasks.CogUserscripts.Copy do
 
   # The scripts live in priv/ now, so this resolves through the application whether
   # the library is a dependency or the project being worked on.
-  defp source_dir, do: CogUserscripts.bundled_dir()
+  defp source_dir, do: Myelin.bundled_dir()
 end

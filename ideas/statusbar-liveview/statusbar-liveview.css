@@ -1,7 +1,7 @@
 /* The bar's own look comes from the LiveView the app serves — this only
    positions it and styles the failure notice. */
 
-#cog-statusbar-lv {
+#myelin-statusbar-lv {
   position: fixed;
   top: 0;
   left: 0;
@@ -15,13 +15,13 @@
   font-size: 13px;
 }
 
-#cog-statusbar-lv > * {
+#myelin-statusbar-lv > * {
   height: 100%;
 }
 
 /* Deliberately visible rather than a silent empty strip: an unreachable
    firmware bar is something you want to notice. */
-#cog-statusbar-lv.is-failed {
+#myelin-statusbar-lv.is-failed {
   display: flex;
   align-items: center;
   padding: 0 12px;

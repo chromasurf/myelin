@@ -144,7 +144,7 @@ static bool doc_parse_object(Doc *doc, const char *json)
 
 /* Appends a token's JSON text verbatim. jsmn reports string tokens *without*
  * their quotes, so those go back on — every other type carries its own
- * delimiters. The text was validated by cus_json_slice_ok() before it got here,
+ * delimiters. The text was validated by myl_json_slice_ok() before it got here,
  * so escapes inside strings can be copied as they are. */
 static void buf_add_token(Buf *buf, const Doc *doc, int index)
 {
@@ -170,14 +170,14 @@ static bool object_has_key(const Doc *doc, int index, const char *key)
     int i = index + 1;
 
     for (int k = 0; k < n; k++) {
-        char *text = cus_json_dup(doc->json, &doc->tokens[i]);
+        char *text = myl_json_dup(doc->json, &doc->tokens[i]);
         bool same = text && strcmp(text, key) == 0;
 
         free(text);
         if (same)
             return true;
 
-        i = cus_json_skip(doc->tokens, i + 1);
+        i = myl_json_skip(doc->tokens, i + 1);
     }
 
     return false;
@@ -199,12 +199,12 @@ static void buf_add_pairs(Buf *buf, const Doc *doc, int index, const Doc *skip_d
         int value = i + 1;
 
         if (skip_doc) {
-            char *key = cus_json_dup(doc->json, &doc->tokens[i]);
+            char *key = myl_json_dup(doc->json, &doc->tokens[i]);
             bool covered = key && object_has_key(skip_doc, 0, key);
 
             free(key);
             if (covered) {
-                i = cus_json_skip(doc->tokens, value);
+                i = myl_json_skip(doc->tokens, value);
                 continue;
             }
         }
@@ -217,7 +217,7 @@ static void buf_add_pairs(Buf *buf, const Doc *doc, int index, const Doc *skip_d
         buf_add_str(buf, ":");
         buf_add_token(buf, doc, value);
 
-        i = cus_json_skip(doc->tokens, value);
+        i = myl_json_skip(doc->tokens, value);
     }
 }
 
@@ -259,7 +259,7 @@ typedef struct {
     char *json; /* raw object text, braces included */
 } ScriptConfig;
 
-struct CusConfig {
+struct MylConfig {
     char **trusted_origins;
     size_t n_trusted_origins;
     ScriptConfig *scripts;
@@ -271,7 +271,7 @@ struct CusConfig {
  * from an empty array: allocating a fresh one while the old count still stood
  * wrote past the end of it. Last usable occurrence wins, which is how "name"
  * and "config" already behave in manifest.c. */
-static void clear_trusted_origins(CusConfig *config)
+static void clear_trusted_origins(MylConfig *config)
 {
     for (size_t i = 0; i < config->n_trusted_origins; i++)
         free(config->trusted_origins[i]);
@@ -281,7 +281,7 @@ static void clear_trusted_origins(CusConfig *config)
     config->n_trusted_origins = 0;
 }
 
-static void clear_scripts(CusConfig *config)
+static void clear_scripts(MylConfig *config)
 {
     for (size_t i = 0; i < config->n_scripts; i++) {
         free(config->scripts[i].id);
@@ -293,7 +293,7 @@ static void clear_scripts(CusConfig *config)
     config->n_scripts = 0;
 }
 
-void cus_config_free(CusConfig *config)
+void myl_config_free(MylConfig *config)
 {
     if (!config)
         return;
@@ -305,7 +305,7 @@ void cus_config_free(CusConfig *config)
 
 /* An entry has to be a URL that same_origin() can take apart again, and it has
  * to name a host. Neither is checked by the type test alone, and getting it
- * wrong is silent in the worst way: cus_split_url() fails, same_origin() returns
+ * wrong is silent in the worst way: myl_split_url() fails, same_origin() returns
  * false for every page, and not one meta tag on the device does anything any
  * more. "localhost:4000" without a scheme is the mistake to expect, because
  * match patterns and the domain-block allowlist both take host:port. */
@@ -314,7 +314,7 @@ static bool origin_usable(const char *value)
     char *scheme = NULL, *host = NULL, *port = NULL, *path = NULL;
     bool ok;
 
-    if (!cus_split_url(value, &scheme, &host, &port, &path))
+    if (!myl_split_url(value, &scheme, &host, &port, &path))
         return false;
 
     ok = *host != '\0';
@@ -326,13 +326,13 @@ static bool origin_usable(const char *value)
     return ok;
 }
 
-static void parse_trusted_origins(CusConfig *config, const Doc *doc, int index)
+static void parse_trusted_origins(MylConfig *config, const Doc *doc, int index)
 {
     int n = doc->tokens[index].size;
     int i = index + 1;
 
     if (doc->tokens[index].type != JSMN_ARRAY) {
-        cus_warn("config: trusted_origins must be an array, ignoring");
+        myl_warn("config: trusted_origins must be an array, ignoring");
         return;
     }
 
@@ -347,35 +347,35 @@ static void parse_trusted_origins(CusConfig *config, const Doc *doc, int index)
 
     for (int k = 0; k < n; k++) {
         if (doc->tokens[i].type == JSMN_STRING) {
-            char *value = cus_json_dup(doc->json, &doc->tokens[i]);
+            char *value = myl_json_dup(doc->json, &doc->tokens[i]);
 
             if (value && origin_usable(value)) {
                 config->trusted_origins[config->n_trusted_origins++] = value;
             } else if (value) {
-                cus_warn("config: trusted_origins entry \"%s\" is not an origin — it "
+                myl_warn("config: trusted_origins entry \"%s\" is not an origin — it "
                          "needs a scheme and a host, as in \"http://localhost:4000\" — "
                          "ignoring it", value);
                 free(value);
             }
         } else {
-            cus_warn("config: trusted_origins entry %d is not a string, ignoring", k);
+            myl_warn("config: trusted_origins entry %d is not a string, ignoring", k);
         }
 
-        i = cus_json_skip(doc->tokens, i);
+        i = myl_json_skip(doc->tokens, i);
     }
 
     if (config->n_trusted_origins == 0)
-        cus_warn("config: trusted_origins has no usable entry, so no page can "
+        myl_warn("config: trusted_origins has no usable entry, so no page can "
                  "configure a script through a meta tag");
 }
 
-static void parse_scripts(CusConfig *config, const Doc *doc, int index)
+static void parse_scripts(MylConfig *config, const Doc *doc, int index)
 {
     int n = doc->tokens[index].size;
     int i = index + 1;
 
     if (doc->tokens[index].type != JSMN_OBJECT) {
-        cus_warn("config: scripts must be an object, ignoring");
+        myl_warn("config: scripts must be an object, ignoring");
         return;
     }
 
@@ -390,20 +390,20 @@ static void parse_scripts(CusConfig *config, const Doc *doc, int index)
 
     for (int k = 0; k < n; k++) {
         int value = i + 1;
-        char *id = cus_json_dup(doc->json, &doc->tokens[i]);
+        char *id = myl_json_dup(doc->json, &doc->tokens[i]);
 
         if (!id) {
-            i = cus_json_skip(doc->tokens, value);
+            i = myl_json_skip(doc->tokens, value);
             continue;
         }
 
         if (doc->tokens[value].type != JSMN_OBJECT) {
-            cus_warn("config: settings for \"%s\" are not an object, ignoring", id);
+            myl_warn("config: settings for \"%s\" are not an object, ignoring", id);
             free(id);
-        } else if (!cus_json_slice_ok(doc->json, doc->tokens, value)) {
+        } else if (!myl_json_slice_ok(doc->json, doc->tokens, value)) {
             /* Same bar as the manifest's own "config": this text is spliced into
              * JS source, so it has to be JSON that can travel verbatim. */
-            cus_warn("config: settings for \"%s\" are not JSON that can be passed on "
+            myl_warn("config: settings for \"%s\" are not JSON that can be passed on "
                      "verbatim, ignoring", id);
             free(id);
         } else {
@@ -419,13 +419,13 @@ static void parse_scripts(CusConfig *config, const Doc *doc, int index)
             }
         }
 
-        i = cus_json_skip(doc->tokens, value);
+        i = myl_json_skip(doc->tokens, value);
     }
 }
 
-CusConfig *cus_config_parse(const char *json)
+MylConfig *myl_config_parse(const char *json)
 {
-    CusConfig *config = calloc(1, sizeof(*config));
+    MylConfig *config = calloc(1, sizeof(*config));
     Doc doc = { 0 };
     bool seen_trusted_origins = false;
     bool seen_scripts = false;
@@ -441,12 +441,12 @@ CusConfig *cus_config_parse(const char *json)
         return config;
 
     if (strlen(json) > MAX_CONFIG_BYTES) {
-        cus_warn("config: larger than %d bytes, ignoring it", MAX_CONFIG_BYTES);
+        myl_warn("config: larger than %d bytes, ignoring it", MAX_CONFIG_BYTES);
         return config;
     }
 
     if (!doc_parse_object(&doc, json)) {
-        cus_warn("config: not a JSON object, ignoring it — no script loses its "
+        myl_warn("config: not a JSON object, ignoring it — no script loses its "
                  "manifest defaults");
         return config;
     }
@@ -458,26 +458,26 @@ CusConfig *cus_config_parse(const char *json)
         const jsmntok_t *key = &doc.tokens[i];
         int value = i + 1;
 
-        if (cus_json_eq(json, key, "trusted_origins")) {
+        if (myl_json_eq(json, key, "trusted_origins")) {
             if (seen_trusted_origins)
-                cus_warn("config: trusted_origins appears more than once, the last "
+                myl_warn("config: trusted_origins appears more than once, the last "
                          "one wins");
             seen_trusted_origins = true;
             parse_trusted_origins(config, &doc, value);
-        } else if (cus_json_eq(json, key, "scripts")) {
+        } else if (myl_json_eq(json, key, "scripts")) {
             if (seen_scripts)
-                cus_warn("config: scripts appears more than once, the last one wins");
+                myl_warn("config: scripts appears more than once, the last one wins");
             seen_scripts = true;
             parse_scripts(config, &doc, value);
         } else {
-            char *name = cus_json_dup(json, key);
+            char *name = myl_json_dup(json, key);
 
-            cus_warn("config: key \"%s\" is not supported, ignoring",
+            myl_warn("config: key \"%s\" is not supported, ignoring",
                      name ? name : "?");
             free(name);
         }
 
-        i = cus_json_skip(doc.tokens, value);
+        i = myl_json_skip(doc.tokens, value);
     }
 
     doc_free(&doc);
@@ -500,13 +500,13 @@ static char *read_file(const char *path)
 
     if (fseek(file, 0, SEEK_END) != 0 || (size = ftell(file)) < 0 ||
         fseek(file, 0, SEEK_SET) != 0) {
-        cus_warn("config: cannot determine the size of %s", path);
+        myl_warn("config: cannot determine the size of %s", path);
         fclose(file);
         return NULL;
     }
 
     if (size > MAX_CONFIG_BYTES) {
-        cus_warn("config: %s is larger than %d bytes, refusing to read", path,
+        myl_warn("config: %s is larger than %d bytes, refusing to read", path,
                  MAX_CONFIG_BYTES);
         fclose(file);
         return NULL;
@@ -519,7 +519,7 @@ static char *read_file(const char *path)
      * from an earlier directory. So say so and count as absent: no bytes is not
      * a configuration. */
     if (size == 0) {
-        cus_warn("config: %s is empty, ignoring it", path);
+        myl_warn("config: %s is empty, ignoring it", path);
         fclose(file);
         return NULL;
     }
@@ -536,7 +536,7 @@ static char *read_file(const char *path)
     /* A directory named config.json opens and seeks like a file on Linux and
      * then reads nothing, which is the same silent wipe by another route. */
     if (read_bytes != (size_t)size) {
-        cus_warn("config: cannot read %s (got %zu of %ld bytes), ignoring it", path,
+        myl_warn("config: cannot read %s (got %zu of %ld bytes), ignoring it", path,
                  read_bytes, size);
         free(buffer);
         return NULL;
@@ -546,10 +546,10 @@ static char *read_file(const char *path)
     return buffer;
 }
 
-CusConfig *cus_config_load_path(const char *const *search_path, size_t n_entries)
+MylConfig *myl_config_load_path(const char *const *search_path, size_t n_entries)
 {
     char *found = NULL;
-    CusConfig *config;
+    MylConfig *config;
 
     for (size_t e = 0; e < n_entries; e++) {
         size_t len = strlen(search_path[e]);
@@ -573,13 +573,13 @@ CusConfig *cus_config_load_path(const char *const *search_path, size_t n_entries
              * gets here, and an earlier directory's config stands. */
             free(found);
             found = text;
-            cus_debug("config: reading %s", path);
+            myl_debug("config: reading %s", path);
         }
 
         free(path);
     }
 
-    config = cus_config_parse(found);
+    config = myl_config_parse(found);
     free(found);
     return config;
 }
@@ -588,7 +588,7 @@ CusConfig *cus_config_load_path(const char *const *search_path, size_t n_entries
  * applying it
  * ------------------------------------------------------------------ */
 
-static const char *script_config_for(const CusConfig *config, const char *id)
+static const char *script_config_for(const MylConfig *config, const char *id)
 {
     for (size_t i = 0; i < config->n_scripts; i++) {
         if (strcmp(config->scripts[i].id, id) == 0)
@@ -600,7 +600,7 @@ static const char *script_config_for(const CusConfig *config, const char *id)
 
 /* The coupling between a configuration key and a script id is the directory
  * name, and it is silent: a typo means settings that arrive nowhere at all. */
-static void warn_unmatched(const CusConfig *config, const CusManifestList *list)
+static void warn_unmatched(const MylConfig *config, const MylManifestList *list)
 {
     for (size_t i = 0; i < config->n_scripts; i++) {
         bool matched = false;
@@ -625,20 +625,20 @@ static void warn_unmatched(const CusConfig *config, const CusManifestList *list)
         {
             char *names = buf_take(&loaded);
 
-            cus_warn("config for \"%s\" matches no script (loaded: %s)",
+            myl_warn("config for \"%s\" matches no script (loaded: %s)",
                      config->scripts[i].id, names ? names : "none");
             free(names);
         }
     }
 }
 
-void cus_config_apply(const CusConfig *config, CusManifestList *list)
+void myl_config_apply(const MylConfig *config, MylManifestList *list)
 {
     if (!config || !list)
         return;
 
     for (size_t i = 0; i < list->n_items; i++) {
-        CusManifest *manifest = &list->items[i];
+        MylManifest *manifest = &list->items[i];
         const char *over = script_config_for(config, manifest->id);
 
         if (!over)
@@ -653,7 +653,7 @@ void cus_config_apply(const CusConfig *config, CusManifestList *list)
             char *merged = merge_objects(manifest->config, over);
 
             if (!merged) {
-                cus_warn("%s: could not merge the device configuration, keeping the "
+                myl_warn("%s: could not merge the device configuration, keeping the "
                          "manifest defaults", manifest->id);
                 continue;
             }
@@ -676,10 +676,10 @@ static bool same_origin(const char *a, const char *b)
     char *b_scheme = NULL, *b_host = NULL, *b_port = NULL, *b_path = NULL;
     bool ok = false;
 
-    if (!cus_split_url(a, &a_scheme, &a_host, &a_port, &a_path))
+    if (!myl_split_url(a, &a_scheme, &a_host, &a_port, &a_path))
         return false;
 
-    if (!cus_split_url(b, &b_scheme, &b_host, &b_port, &b_path)) {
+    if (!myl_split_url(b, &b_scheme, &b_host, &b_port, &b_path)) {
         free(a_scheme);
         free(a_host);
         free(a_port);
@@ -704,7 +704,7 @@ static bool same_origin(const char *a, const char *b)
     return ok;
 }
 
-bool cus_config_origin_trusted(const CusConfig *config, const char *url)
+bool myl_config_origin_trusted(const MylConfig *config, const char *url)
 {
     if (!config || !url || !*url)
         return false;
@@ -721,8 +721,8 @@ bool cus_config_origin_trusted(const CusConfig *config, const char *url)
  * whether a script runs
  * ------------------------------------------------------------------ */
 
-/* True when `list` — a space separated set of script ids, as a cog-enable or
- * cog-disable meta tag carries them — contains `id`. */
+/* True when `list` — a space separated set of script ids, as a myelin-enable or
+ * myelin-disable meta tag carries them — contains `id`. */
 static bool list_contains(const char *list, const char *id)
 {
     size_t id_len = strlen(id);
@@ -768,25 +768,25 @@ static bool lookup_bool(const char *json, const char *key, bool *out)
     for (int k = 0; k < n_keys; k++) {
         int value = i + 1;
 
-        if (cus_json_eq(json, &doc.tokens[i], key)) {
-            if (cus_json_is_true(json, &doc.tokens[value])) {
+        if (myl_json_eq(json, &doc.tokens[i], key)) {
+            if (myl_json_is_true(json, &doc.tokens[value])) {
                 *out = true;
                 found = true;
-            } else if (cus_json_is_false(json, &doc.tokens[value])) {
+            } else if (myl_json_is_false(json, &doc.tokens[value])) {
                 *out = false;
                 found = true;
             }
             break;
         }
 
-        i = cus_json_skip(doc.tokens, value);
+        i = myl_json_skip(doc.tokens, value);
     }
 
     doc_free(&doc);
     return found;
 }
 
-bool cus_script_enabled(const CusManifest *manifest, const char *enable_meta,
+bool myl_script_enabled(const MylManifest *manifest, const char *enable_meta,
                         const char *disable_meta)
 {
     bool enabled;
@@ -800,7 +800,7 @@ bool cus_script_enabled(const CusManifest *manifest, const char *enable_meta,
     lookup_bool(manifest->config, "enabled", &enabled);
 
     /* Both are NULL on an untrusted origin, so a foreign page cannot switch a
-     * script off by claiming cog-disable, which is the property this rests on. */
+     * script off by claiming myelin-disable, which is the property this rests on. */
     if (list_contains(disable_meta, manifest->id))
         return false;
 

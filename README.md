@@ -1,15 +1,20 @@
-# cog_userscripts
+# myelin
 
-[![CI](https://github.com/chromasurf/cog_userscripts/actions/workflows/ci.yml/badge.svg)](https://github.com/chromasurf/cog_userscripts/actions/workflows/ci.yml)
+[![CI](https://github.com/chromasurf/myelin/actions/workflows/ci.yml/badge.svg)](https://github.com/chromasurf/myelin/actions/workflows/ci.yml)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
-Loads userscripts (JS + CSS) into every web session of the
-[Cog](https://github.com/Igalia/cog) kiosk browser, so that kiosk-wide features —
-an onscreen keyboard, a screensaver — can be written once instead of being built
-into every application.
+The kiosk UI layer for Nerves. Loads scripts (JS + CSS) into every web session of
+the [Cog](https://github.com/Igalia/cog) kiosk browser, so that kiosk-wide
+features — an onscreen keyboard, a screensaver — can be written once instead of
+being built into every application.
 
 It ships as a WPE WebKit **web process extension**: a small `.so` that Cog loads via
 `--web-extensions-dir`. No patched Cog, no forked Nerves system.
+
+*Myelin is the sheath around a nerve fibre: it does not carry the signal, it wraps
+the line and makes it fast and reliable. That is this library's relationship to your
+application — it sits between the glass and the web page and adds nothing the page
+has to know about.*
 
 Verified against Cog 0.18.5 / WPE WebKit 2.50.5 (`nerves_system_br` 1.34.0), which
 is what the official [Nerves Web Kiosk](https://github.com/nerves-web-kiosk) systems
@@ -31,19 +36,19 @@ can come from the device rather than the page.
 
 ```elixir
 # mix.exs
-{:cog_userscripts, github: "chromasurf/cog_userscripts", tag: "v0.1.0"}
+{:myelin, github: "chromasurf/myelin", tag: "v0.2.0"}
 ```
 
 Needs OTP 27 or newer: the device configuration is encoded with `:json`, which keeps
 this library free of a JSON dependency. The floor is checked at compile time rather
 than left to fail inside a firmware image.
 
-Merge two things into however you already start Cog — `cog_args/0` for the command
-line, `cog_env/1` for the environment:
+Merge two things into however you already start Cog — `browser_args/0` for the command
+line, `browser_env/1` for the environment:
 
 ```elixir
-args = ["--platform=drm", url] ++ CogUserscripts.cog_args()
-env = [{"XDG_RUNTIME_DIR", runtime_dir}] ++ CogUserscripts.cog_env()
+args = ["--platform=drm", url] ++ Myelin.browser_args()
+env = [{"XDG_RUNTIME_DIR", runtime_dir}] ++ Myelin.browser_env()
 
 MuonTrap.Daemon.start_link("cog", args, env: env)
 ```
@@ -52,7 +57,7 @@ Then switch on what you want:
 
 ```elixir
 # config/runtime.exs
-config :cog_userscripts,
+config :myelin,
   scripts: %{
     "keyboard" => %{enabled: true},
     "screensaver" => %{enabled: true}
@@ -60,16 +65,16 @@ config :cog_userscripts,
 ```
 
 That is the whole install. The scripts ship inside the library, in
-`CogUserscripts.bundled_dir/0`, and that directory is on the search path already —
+`Myelin.bundled_dir/0`, and that directory is on the search path already —
 but **every one of them is dormant until you name it**. A kiosk that configures
-nothing gets no userscripts.
+nothing gets no scripts.
 
-On `MIX_TARGET=host` the native build is skipped and `cog_args/0` returns `[]`, so a
+On `MIX_TARGET=host` the native build is skipped and `browser_args/0` returns `[]`, so a
 host build stays green.
 
 ## Where scripts come from
 
-`COG_USERSCRIPTS_PATH` is a colon-separated list of directories, scanned left to
+`MYELIN_PATH` is a colon-separated list of directories, scanned left to
 right. Each subdirectory containing a `manifest.json` is one script, identified by
 its directory name — **that name is the script id**, and everything else refers to it
 by that.
@@ -77,17 +82,17 @@ by that.
 | Directory | What it is |
 |---|---|
 | `priv/scripts` inside this library | the eight that ship. On the search path automatically. |
-| `priv/userscripts` of your application | what you wrote, and what you copied to change |
-| `/data/cog-userscripts` | for iterating on a device without a firmware build |
+| `priv/myelin` of your application | what you wrote, and what you copied to change |
+| `/data/myelin` | for iterating on a device without a firmware build |
 
 **Later entries win.** A directory with the same name further right replaces the
 earlier one entirely, which is what makes copying work: your copy of `keyboard`
 shadows the one that ships.
 
 ```elixir
-config :cog_userscripts, extra_dirs: ["/data/cog-userscripts"]
+config :myelin, extra_dirs: ["/data/myelin"]
 
-CogUserscripts.cog_env(extra: [Application.app_dir(:my_app, "priv/userscripts")])
+Myelin.browser_env(extra: [Application.app_dir(:my_app, "priv/myelin")])
 ```
 
 `:my_app` there is your own application's OTP name — the `:app` in your `mix.exs`.
@@ -106,7 +111,7 @@ change, so they say **Beta** in their own header.
 | `navbar` | beta | A browser bar for a kiosk: home, reload, address. Claims the top edge, as `statusbar` does — run one. |
 | `offline-banner` | beta | Says so when the connection drops. `navigator.onLine` only reports whether a link exists, so an optional probe URL answers the real question. |
 | `domain-block` | beta | Covers a page that is not on an allowlist, with a way back. **Not a network filter** — see below. |
-| `debug-overlay` | beta | URL, viewport, FPS, JS heap, which scripts ran, and the last few JS errors. Three taps top-right. That last part is why it exists: an exception in a userscript is otherwise invisible. |
+| `debug-overlay` | beta | URL, viewport, FPS, JS heap, which scripts ran, and the last few JS errors. Three taps top-right. That last part is why it exists: an exception in a script is otherwise invisible. |
 
 `ideas/` holds five more that **do not ship** — a PIN lock, a LiveView status bar, a
 confetti gesture and two others. They are there to be read and reworked; see
@@ -117,8 +122,8 @@ confetti gesture and two others. They are there to be read and reworked; see
 You do not need to copy anything to *run* it. Copy when you want to **edit**:
 
 ```bash
-mix cog_userscripts.copy              # what there is, and how to switch it on
-mix cog_userscripts.copy keyboard     # into priv/userscripts
+mix myelin.copy              # what there is, and how to switch it on
+mix myelin.copy keyboard     # into priv/myelin
 ```
 
 A copied script is yours: it will not be touched by an upgrade, and it replaces the
@@ -131,8 +136,8 @@ Changing a script does not need a firmware build if the writable partition is on
 search path. Nerves devices expose an SSH subsystem for file transfer:
 
 ```bash
-scp -O priv/userscripts/keyboard/keyboard.js \
-    nerves.local:/data/cog-userscripts/keyboard/keyboard.js
+scp -O priv/myelin/keyboard/keyboard.js \
+    nerves.local:/data/myelin/keyboard/keyboard.js
 ```
 
 Create the directory first over an IEx session if it is not there
@@ -144,7 +149,7 @@ Device-wide, in your application's config. This is the layer that always applies
 
 ```elixir
 # config/runtime.exs
-config :cog_userscripts,
+config :myelin,
   trusted_origins: ["http://localhost:4000"],
   scripts: %{
     "keyboard" => %{enabled: true, layout: "de"},
@@ -159,10 +164,10 @@ The keys under `scripts` are directory names.
 tags:
 
 ```html
-<meta name="cog-screensaver-idle" content="30">
-<meta name="cog-keyboard-layout" content="de">
-<meta name="cog-enable" content="statusbar">
-<meta name="cog-disable" content="keyboard">
+<meta name="myelin-screensaver-idle" content="30">
+<meta name="myelin-keyboard-layout" content="de">
+<meta name="myelin-enable" content="statusbar">
+<meta name="myelin-disable" content="keyboard">
 ```
 
 A tag is only read if the page's origin appears in `trusted_origins`, which starts
@@ -174,17 +179,17 @@ wanders onto a page you do not control cannot be reconfigured by it.
 Three places, least specific first, each overriding the one before it key by key:
 
 1. **The default in the script**, which is the script author's answer.
-2. **Your `config :cog_userscripts`**, which is the answer for this fleet of
+2. **Your `config :myelin`**, which is the answer for this fleet of
    terminals — and the one that holds whatever page the kiosk ends up on.
 3. **A meta tag on the page**, on a trusted origin only, which is the answer for
    this page.
 
 So a script whose default is `120`, on a device that says `%{idle: 300}`, on a
-trusted page carrying `<meta name="cog-screensaver-idle" content="30">`, gets 30.
+trusted page carrying `<meta name="myelin-screensaver-idle" content="30">`, gets 30.
 
-## Writing a userscript
+## Writing a script
 
-There is not much of a format. A userscript is a plain `.js` file, and the file body
+There is not much of a format. A script is a plain `.js` file, and the file body
 is the script — the loader already wraps it in a function of its own, so a top-level
 `var` belongs to your script and cannot collide with another's.
 
@@ -208,7 +213,7 @@ var IDLE_MS = ctx.config("idle", 120) * 1000;
 var MODE = ctx.config("mode", "both");
 
 var overlay = document.createElement("div");
-overlay.id = "cog-screensaver";
+overlay.id = "myelin-screensaver";
 overlay.style.background = ctx.config("bg", "#000");
 document.body.appendChild(overlay);
 
@@ -223,12 +228,12 @@ ctx.on("screensaver:show", show);
 | | |
 |---|---|
 | `ctx.config(name, default)` | a setting — see below |
-| `ctx.on(name, handler)` | listen for `cog:<name>` **and** `phx:cog:<name>`, so it does not matter whether another script or your application sent it |
-| `ctx.emit(name, detail)` | dispatch `cog:<name>` on `window`, and push it to a LiveView if the page has one |
+| `ctx.on(name, handler)` | listen for `myelin:<name>` **and** `phx:myelin:<name>`, so it does not matter whether another script or your application sent it |
+| `ctx.emit(name, detail)` | dispatch `myelin:<name>` on `window`, and push it to a LiveView if the page has one |
 | `ctx.css` | the text of the manifest's `shadow_css` files, for a script that builds its own shadow root |
 
 Everything else is the DOM, and all of it works — `addEventListener`,
-`querySelector`, `createElement`, `attachShadow`, `fetch`, `setTimeout`. A userscript
+`querySelector`, `createElement`, `attachShadow`, `fetch`, `setTimeout`. A script
 runs in the page's own JavaScript world, so there is no shim and no wrapper around any
 of it.
 
@@ -251,8 +256,8 @@ same thing. This is where that happens, once, instead of in every script:
 | `"auto"` | a string, so a configured number still compares as one |
 
 Two tag names are tried, this script's own and then the bare one. So
-`<meta name="cog-theme" content="dark">` reaches every script that asks for `theme`,
-while `cog-keyboard-theme` overrides it for the keyboard alone.
+`<meta name="myelin-theme" content="dark">` reaches every script that asks for `theme`,
+while `myelin-keyboard-theme` overrides it for the keyboard alone.
 
 Write a list as a list. As a bare string it is split on commas, which is right for
 `items` and wrong for a regular expression — `keyboard`'s `skip` says so where it
@@ -266,7 +271,7 @@ listens for `statusbar:ready` to sit below the bar rather than under it; `status
 listens for `screensaver:show` to dim itself.
 
 You pass the bare name — `emit("screensaver:show")` — and everything on the wire
-carries a `cog:` prefix. That is there for one reason: `window` belongs to the page,
+carries a `myelin:` prefix. That is there for one reason: `window` belongs to the page,
 and a kiosk visits pages nobody here controls, so a bare `screensaver:show` could
 collide with an event of the page's own.
 
@@ -276,7 +281,7 @@ being *told* to show the screensaver is not the same as being configured.
 ### Talking to a LiveView
 
 Both directions work without writing a hook, and the event name is the same one in
-both — `cog:` plus what the script called it.
+both — `myelin:` plus what the script called it.
 
 **Scripts → application.** `ctx.emit` announces to the other scripts *and* pushes to
 the LiveView, over the client's public `liveSocket.js().push`. It needs an element
@@ -288,23 +293,23 @@ you need `{:reply, …}`, use a real hook.
 the name you sent, and `ctx.on` listens for that alongside the plain one.
 
 ```elixir
-def handle_event("cog:screensaver:show", _params, socket) do
+def handle_event("myelin:screensaver:show", _params, socket) do
   File.write("/sys/class/backlight/10-0045/brightness", "0")
   {:noreply, socket}
 end
 
-def handle_event("cog:" <> _event, _params, socket) do
+def handle_event("myelin:" <> _event, _params, socket) do
   # statusbar:ready, navbar:ready, and whatever a script announces next
   {:noreply, socket}
 end
 
 # and to drive one from Elixir
-{:noreply, push_event(socket, "cog:screensaver:hide", %{})}
+{:noreply, push_event(socket, "myelin:screensaver:hide", %{})}
 ```
 
 Which is the whole answer to "dim the panel when the screensaver comes on": the
 screensaver dims the DOM, and the firmware dims the backlight, because
-`/sys/class/backlight` is not something a userscript can reach.
+`/sys/class/backlight` is not something a script can reach.
 
 > #### Your LiveViews need a clause for the whole layer {: .warning}
 >
@@ -315,8 +320,8 @@ screensaver dims the DOM, and the firmware dims the backlight, because
 > go down.
 >
 > The shared prefix is what keeps that from meaning a blanket catch-all:
-> `handle_event("cog:" <> _event, …)` as the last of your `cog:` clauses swallows
-> userscript events without also swallowing a typo in one of your own.
+> `handle_event("myelin:" <> _event, …)` as the last of your `myelin:` clauses swallows
+> script events without also swallowing a typo in one of your own.
 
 ## What surrounds a script
 
@@ -339,7 +344,7 @@ secret from the page it runs on.
 The boundary that does hold is a different one: **whether an origin is trusted is
 decided in C, outside the page, and baked into the evaluated source as a literal.**
 A page cannot claim trust it was not given, so it cannot switch a script off with
-`cog-disable`, and it cannot configure one with a meta tag. That property has its own
+`myelin-disable`, and it cannot configure one with a meta tag. That property has its own
 test.
 
 ## Shadow roots
@@ -358,7 +363,7 @@ where they belong:
 
 ```js
 var host = document.createElement("div");
-host.id = "cog-lock";
+host.id = "myelin-lock";
 
 var root = host.attachShadow({ mode: "open" });
 
@@ -389,7 +394,7 @@ second stylesheet under `css` for it.
 
 Of the eight that ship, only `domain-block` uses a shadow root. The keyboard
 deliberately does not: it lives in the page, so a page can recolour it through the
-`--osk-*` custom properties and drive it through `window.cogOsk`. The cost is that a
+`--myelin-osk-*` custom properties and drive it through `window.myelin.osk`. The cost is that a
 page's CSS can interfere with it.
 
 
@@ -433,7 +438,7 @@ and ignored, so a manifest copied from a real extension still loads what it can.
 touching the file:
 
 ```elixir
-config :cog_userscripts,
+config :myelin,
   scripts: %{"statusbar" => %{enabled: true, items: ["clock", "url"]}}
 ```
 
@@ -532,10 +537,10 @@ a few hundred lines this is the shorter route, not the cruder one.
 ```elixir
 # config/config.exs
 config :esbuild,
-  userscripts: [
+  myelin: [
     args: ~w(
-      js/userscripts/branding.js --bundle --format=iife --target=es2020
-      --outfile=../priv/userscripts/branding/build/branding.js
+      js/myelin/branding.js --bundle --format=iife --target=es2020
+      --outfile=../priv/myelin/branding/build/branding.js
     ),
     cd: Path.expand("../assets", __DIR__),
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
@@ -560,13 +565,10 @@ config :esbuild,
 
   ```ts
   declare const ctx: {
-    script(spec: {
-      config?: Record<string, unknown>
-      shared?: Record<string, unknown>
-      element?: string
-      shadow?: boolean
-      setup(self: any): void
-    }): void
+    config<T>(name: string, fallback: T): T
+    on(name: string, handler: (event: CustomEvent) => void): void
+    emit(name: string, detail?: unknown): boolean
+    css: string
   }
   ```
 
@@ -579,11 +581,11 @@ someone else's page:
   `tailwindcss/utilities` only, never the collected `tailwindcss`. v3:
   `corePlugins: { preflight: false }`.
 - **A prefix.** `.flex`, `.p-4` and `.fixed` collide in both directions with whatever
-  the visited page defines. v4: `@import "tailwindcss" prefix(cog)`. v3:
-  `prefix: "cog-"`. It also matches the convention the shipped scripts use —
-  `cog-osk`, `cog-screensaver`, `cog-debug-row`.
+  the visited page defines. v4: `@import "tailwindcss" prefix(myelin)`. v3:
+  `prefix: "myelin-"`. It also matches the convention the shipped scripts use —
+  `myelin-osk`, `myelin-screensaver`, `myelin-debug-row`.
 
-Point the content glob at the sources (`assets/js/userscripts/**/*.{js,ts}`), not at
+Point the content glob at the sources (`assets/js/myelin/**/*.{js,ts}`), not at
 the esbuild output. Tailwind and esbuild are independent; the order does not matter
 as long as the glob sees the source.
 
@@ -600,21 +602,21 @@ line 1.
 
 ## Debugging
 
-Set `G_MESSAGES_DEBUG=cog-userscripts` in Cog's environment. The extension then logs
+Set `G_MESSAGES_DEBUG=myelin` in Cog's environment. The extension then logs
 where its configuration came from, which manifests it found, which were overridden,
 and every injection:
 
 ```
-cog-userscripts-DEBUG: configuration from COG_USERSCRIPTS_CONFIG
-cog-userscripts-DEBUG: loaded "Onscreen Keyboard" (keyboard) with 1 content script(s) from …
-cog-userscripts-DEBUG: keyboard: injected keyboard.css
-cog-userscripts-DEBUG: keyboard: injected keyboard.js
+myelin-DEBUG: configuration from MYELIN_CONFIG
+myelin-DEBUG: loaded "Onscreen Keyboard" (keyboard) with 1 content script(s) from …
+myelin-DEBUG: keyboard: injected keyboard.css
+myelin-DEBUG: keyboard: injected keyboard.js
 ```
 
 No output at all means the `.so` was not loaded — check that `--web-extensions-dir`
 points at a directory containing it.
 
-JavaScript exceptions are reported as warnings with a `cog-userscript:///<id>/<file>`
+JavaScript exceptions are reported as warnings with a `myelin:///<id>/<file>`
 source URI, which is also what shows up in the remote inspector's Sources panel. A
 script that throws while setting up is caught and logged with its id, rather than
 silently abandoning the rest of its file.
@@ -633,7 +635,7 @@ is fine and the problem is in your script.
 make check                        # host unit tests — no toolchain needed
 make -C test/c syntax             # compile the WebKit-facing code (needs GLib)
 mix test                          # Elixir side
-MIX_TARGET=<target> mix compile   # cross-compiles priv/webext/libcog_userscripts.so
+MIX_TARGET=<target> mix compile   # cross-compiles priv/webext/libmyelin.so
 ```
 
 The parsing, matching and configuration layers (`c_src/manifest.c`,
@@ -648,7 +650,7 @@ which needs GLib alone. It checks our use of the API, not the API.
 ### Trying the scripts without a device
 
 ```bash
-mix cog_userscripts.harness
+mix myelin.harness
 open http://127.0.0.1:8899/test/harness.html
 ```
 
@@ -669,7 +671,7 @@ One caveat when testing keyboards: use real clicks, not `element.click()` from t
 console. A scripted click moves no focus, so it will not reveal a keyboard that closes
 the moment you press a key.
 
-`c_src/cog_prelude.js` is turned into a C byte array during the build. It is a real
+`c_src/prelude.js` is turned into a C byte array during the build. It is a real
 `.js` file, so `node --check` covers it and an editor treats it as JavaScript.
 
 ## Limitations

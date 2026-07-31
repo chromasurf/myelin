@@ -2,7 +2,7 @@
 
 #include <glib.h>
 
-#include "generated/cog_prelude.h"
+#include "generated/prelude.h"
 #include "log.h"
 
 /* The web process extension API has no user-stylesheet equivalent — that lives
@@ -42,12 +42,12 @@ static gboolean report_exception(JSCContext *context, const char *what)
         return FALSE;
 
     report = jsc_exception_report(exception);
-    cus_warn("%s raised: %s", what, report ? report : "unknown error");
+    myl_warn("%s raised: %s", what, report ? report : "unknown error");
     jsc_context_clear_exception(context);
     return TRUE;
 }
 
-static char *read_script_file(const CusManifest *manifest, const char *name,
+static char *read_script_file(const MylManifest *manifest, const char *name,
                               gsize *length)
 {
     g_autofree char *path = g_build_filename(manifest->dir, name, NULL);
@@ -57,13 +57,13 @@ static char *read_script_file(const CusManifest *manifest, const char *name,
     /* Names were checked when the manifest was parsed, so this only guards
      * against a caller that skipped that. A subdirectory is allowed — a build
      * writes into one — but nothing that could leave the script's directory. */
-    if (!cus_relative_path_ok(name)) {
-        cus_warn("%s: refusing to read \"%s\"", manifest->id, name);
+    if (!myl_relative_path_ok(name)) {
+        myl_warn("%s: refusing to read \"%s\"", manifest->id, name);
         return NULL;
     }
 
     if (!g_file_get_contents(path, &contents, length, &error)) {
-        cus_warn("%s: cannot read %s: %s", manifest->id, path, error->message);
+        myl_warn("%s: cannot read %s: %s", manifest->id, path, error->message);
         return NULL;
     }
 
@@ -74,7 +74,7 @@ static char *read_script_file(const CusManifest *manifest, const char *name,
  * CSS
  * ------------------------------------------------------------------ */
 
-static void inject_css(JSCContext *context, const CusManifest *manifest,
+static void inject_css(JSCContext *context, const MylManifest *manifest,
                        const char *name)
 {
     gsize length = 0;
@@ -91,13 +91,13 @@ static void inject_css(JSCContext *context, const CusManifest *manifest,
         return;
 
     if (!add_style || !jsc_value_is_function(add_style)) {
-        cus_warn("%s: could not build the stylesheet helper", manifest->id);
+        myl_warn("%s: could not build the stylesheet helper", manifest->id);
         return;
     }
 
     /* Stable id so a re-injection into the same document is a no-op. Slashes
      * from a subdirectory become dashes, so the id does not read like a path. */
-    element_id = g_strdup_printf("cog-userscript-style-%s-%s", manifest->id, name);
+    element_id = g_strdup_printf("myelin-style-%s-%s", manifest->id, name);
     for (char *c = element_id; *c; c++) {
         if (*c == '/')
             *c = '-';
@@ -108,14 +108,14 @@ static void inject_css(JSCContext *context, const CusManifest *manifest,
     (void)result;
 
     if (!report_exception(context, element_id))
-        cus_debug("%s: injected %s", manifest->id, name);
+        myl_debug("%s: injected %s", manifest->id, name);
 }
 
 /* The "shadow_css" files, concatenated. These are not injected: the script gets
- * them as cog.css and decides where they go — a shadow root, for a widget that
+ * them as ctx.css and decides where they go — a shadow root, for a widget that
  * has to survive the CSS of whatever page it landed on. */
-static char *read_shadow_css(const CusManifest *manifest,
-                             const CusContentScript *script)
+static char *read_shadow_css(const MylManifest *manifest,
+                             const MylContentScript *script)
 {
     GString *out = g_string_new(NULL);
 
@@ -135,7 +135,7 @@ static char *read_shadow_css(const CusManifest *manifest,
 }
 
 /* ------------------------------------------------------------------ *
- * the cog argument
+ * the ctx argument
  * ------------------------------------------------------------------ */
 
 /* Quotes a script id as a JSON string. It comes from a directory name, so the
@@ -159,24 +159,24 @@ static char *quote_json(const char *text)
  * rather than through JSON.parse: that function belongs to the page, which could
  * have replaced it with one that keeps a copy — and the whole point of handing
  * settings to a single script is that nobody else sees them. */
-static JSCValue *build_cog(JSCContext *context, const CusManifest *manifest,
-                           const CusContentScript *script, bool trusted)
+static JSCValue *build_ctx(JSCContext *context, const MylManifest *manifest,
+                           const MylContentScript *script, bool trusted)
 {
     g_autofree char *id_json = quote_json(manifest->id);
     g_autofree char *source =
-        g_strdup_printf("%s(%s, %s, %s)", kCogPrelude, id_json,
+        g_strdup_printf("%s(%s, %s, %s)", kMyelinPrelude, id_json,
                         trusted ? "true" : "false",
                         manifest->config ? manifest->config : "{}");
-    JSCValue *cog = jsc_context_evaluate(context, source, -1);
+    JSCValue *ctx = jsc_context_evaluate(context, source, -1);
 
-    if (report_exception(context, "the cog prelude")) {
-        g_clear_object(&cog);
+    if (report_exception(context, "the prelude")) {
+        g_clear_object(&ctx);
         return NULL;
     }
 
-    if (!cog || !jsc_value_is_object(cog)) {
-        cus_warn("%s: the cog prelude did not return an object", manifest->id);
-        g_clear_object(&cog);
+    if (!ctx || !jsc_value_is_object(ctx)) {
+        myl_warn("%s: the prelude did not return an object", manifest->id);
+        g_clear_object(&ctx);
         return NULL;
     }
 
@@ -187,10 +187,10 @@ static JSCValue *build_cog(JSCContext *context, const CusManifest *manifest,
         g_autofree char *css = read_shadow_css(manifest, script);
         g_autoptr(JSCValue) value = jsc_value_new_string(context, css);
 
-        jsc_value_object_set_property(cog, "css", value);
+        jsc_value_object_set_property(ctx, "css", value);
     }
 
-    return cog;
+    return ctx;
 }
 
 /* ------------------------------------------------------------------ *
@@ -205,7 +205,7 @@ static JSCValue *build_cog(JSCContext *context, const CusManifest *manifest,
  * to after the wrapper instead. Only from the end, so no line number shifts.
  *
  * sourceURL is deliberately left where it is: hoisting that would override the
- * cog-userscript:// URI below and take the script's name out of every trace. */
+ * myelin:// URI below and take the script's name out of every trace. */
 static char *take_source_map(char *source, gsize *length)
 {
     gsize end = *length;
@@ -234,8 +234,8 @@ static char *take_source_map(char *source, gsize *length)
     return directive;
 }
 
-static void inject_js(JSCContext *context, const CusManifest *manifest,
-                      const char *name, JSCValue *cog)
+static void inject_js(JSCContext *context, const MylManifest *manifest,
+                      const char *name, JSCValue *ctx)
 {
     gsize length = 0;
     g_autofree char *source = read_script_file(manifest, name, &length);
@@ -250,9 +250,9 @@ static void inject_js(JSCContext *context, const CusManifest *manifest,
 
     directive = take_source_map(source, &length);
 
-    /* A cog-userscript:// source URI makes stack traces in the remote
+    /* A myelin:// source URI makes stack traces in the remote
      * inspector point at the file instead of at an anonymous eval. */
-    uri = g_strdup_printf("cog-userscript:///%s/%s", manifest->id, name);
+    uri = g_strdup_printf("myelin:///%s/%s", manifest->id, name);
 
     /* The prologue shares line 1 with the file's own first line, so every line
      * number stays what it is in the file. Columns on line 1 shift by its
@@ -271,21 +271,21 @@ static void inject_js(JSCContext *context, const CusManifest *manifest,
         return;
 
     if (!fn || !jsc_value_is_function(fn)) {
-        cus_warn("%s: %s did not wrap into a function", manifest->id, name);
+        myl_warn("%s: %s did not wrap into a function", manifest->id, name);
         return;
     }
 
-    result = jsc_value_function_call(fn, JSC_TYPE_VALUE, cog, G_TYPE_NONE);
+    result = jsc_value_function_call(fn, JSC_TYPE_VALUE, ctx, G_TYPE_NONE);
     (void)result;
 
     if (!report_exception(context, uri))
-        cus_debug("%s: injected %s", manifest->id, name);
+        myl_debug("%s: injected %s", manifest->id, name);
 }
 
-void cus_inject(JSCContext *context, const CusManifest *manifest,
-                const CusContentScript *script, bool trusted)
+void myl_inject(JSCContext *context, const MylManifest *manifest,
+                const MylContentScript *script, bool trusted)
 {
-    g_autoptr(JSCValue) cog = NULL;
+    g_autoptr(JSCValue) ctx = NULL;
 
     if (!context || !manifest || !script)
         return;
@@ -297,12 +297,12 @@ void cus_inject(JSCContext *context, const CusManifest *manifest,
     if (script->n_js == 0)
         return;
 
-    /* One cog for every file of this content script: a script split across two
-     * files must see the same settings, and cog.css must not be read twice. */
-    cog = build_cog(context, manifest, script, trusted);
-    if (!cog)
+    /* One ctx for every file of this content script: a script split across two
+     * files must see the same settings, and ctx.css must not be read twice. */
+    ctx = build_ctx(context, manifest, script, trusted);
+    if (!ctx)
         return;
 
     for (size_t i = 0; i < script->n_js; i++)
-        inject_js(context, manifest, script->js[i], cog);
+        inject_js(context, manifest, script->js[i], ctx);
 }

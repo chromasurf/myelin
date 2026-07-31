@@ -25,7 +25,7 @@ var ASSETS = ctx.config("assets", "");
 var HEIGHT = ctx.config("height", 28);
 
 var host = document.createElement("div");
-host.id = "cog-statusbar-lv";
+host.id = "myelin-statusbar-lv";
 document.body.appendChild(host);
 host.style.height = HEIGHT + "px";
 document.documentElement.style.paddingTop = HEIGHT + "px";

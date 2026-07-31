@@ -1,10 +1,10 @@
 <meta charset="utf-8">
-<title>cog_userscripts harness</title>
+<title>myelin harness</title>
 
 <!--
   Try every script in priv/scripts/ and ideas/ in any browser, without a device:
 
-      mix cog_userscripts.harness
+      mix myelin.harness
       open http://127.0.0.1:8899/test/harness.html
 
   The scripts are not loaded as files. The harness wraps each one the way the
@@ -29,7 +29,7 @@
 -->
 
 <script>
-  // Runs before the userscripts below, so the meta tags are in place by the
+  // Runs before the scripts below, so the meta tags are in place by the
   // time they read them. Mirrors what a kiosk app would put in its layout.
   (function () {
     var params = new URLSearchParams(location.search);
@@ -49,7 +49,7 @@
     params.forEach(function (value, key) {
       if (key === "trusted") return;
       var el = document.createElement("meta");
-      el.name = "cog-" + key;
+      el.name = "myelin-" + key;
       // Commas are easier to type in a URL than spaces.
       el.content = value.replace(/,/g, " ");
       document.head.appendChild(el);
@@ -320,7 +320,7 @@
 </style>
 
 <div class="hx-head">
-  <span class="hx-logo">◆ COG_USERSCRIPTS</span>
+  <span class="hx-logo">◆ MYELIN</span>
   <span class="hx-stat">scripts <b id="hx-count">–</b></span>
   <span class="hx-stat">theme <b id="hx-theme">–</b></span>
   <span class="hx-stat">origin <b id="hx-trusted">–</b></span>
@@ -328,7 +328,7 @@
 
 <p class="hx-hint">
   Every script here is an <b>example</b> — copy it into your application with
-  <code>mix cog_userscripts.copy &lt;name&gt;</code> and adapt it. The glyph
+  <code>mix myelin.copy &lt;name&gt;</code> and adapt it. The glyph
   and the name switch one on or off, and every option on a card sets a
   <code>&lt;meta&gt;</code> tag. All of it reloads the page: these values are read
   once, when a script is injected, so there is nothing to switch at runtime.
@@ -357,7 +357,7 @@
 <div class="hx-panel">
   <h2>Configuration</h2>
   <div class="hx-cfg">
-    <span class="hx-cfg-key" title="cog-theme — shared by keyboard and navbar">theme</span>
+    <span class="hx-cfg-key" title="myelin-theme — shared by keyboard and navbar">theme</span>
     <div class="hx-row" id="hx-themes"></div>
     <span class="hx-cfg-key" title="whether &lt;meta&gt; tags count at all">origin</span>
     <div class="hx-row" id="hx-trust"></div>
@@ -369,7 +369,7 @@
     not five times over. <code>origin</code> is what a device works out from the
     page against <code>trusted_origins</code>; switched off you get the foreign
     page — no meta tag has any effect, including a page that tries to switch a
-    script off by claiming <code>cog-disable</code>.
+    script off by claiming <code>myelin-disable</code>.
   </p>
   <h2 style="margin-top:18px">Device configuration — <code>test/config.json</code></h2>
   <pre class="hx-log" id="hx-config" style="max-height:220px">…</pre>
@@ -418,7 +418,7 @@
 </div>
 
 <div class="hx-panel">
-  <h2>cog:* events</h2>
+  <h2>myelin:* events</h2>
   <pre class="hx-log" id="hx-log">waiting…</pre>
 </div>
 
@@ -445,7 +445,7 @@
       var q = new URLSearchParams(query);
       Object.keys(extra || {}).forEach(function (k) { q.set(k, extra[k]); });
       q.set("t", t);
-      return "/cog/cog_harness:" + fn + "?" + q.toString();
+      return "/myelin/myelin_harness:" + fn + "?" + q.toString();
     }
 
     fetch(url("manifests"))
@@ -497,15 +497,15 @@
       .catch(function (error) {
         document.getElementById("hx-groups").textContent =
           "could not reach the harness server: " + error +
-          " — is this open through mix cog_userscripts.harness rather than as a file?";
+          " — is this open through mix myelin.harness rather than as a file?";
       });
   })();
 </script>
 
 <script>
-  // Harness UI. Everything below only drives this page — the userscripts
+  // Harness UI. Everything below only drives this page — the scripts
   // neither know nor need it. Called once the last of them has run, so
-  // window.cogUserscripts.loaded reflects reality.
+  // window.myelin.loaded reflects reality.
   window.__hxInit = function () {
     // Which group a script belongs to, and the one sentence above each group.
     //
@@ -575,16 +575,16 @@
     //           Read-only here, because a control that looks settable and is not is
     //           worse than a line of text.
     //
-    // `label` is the short form; the full cog-… name hangs off it as a title and
+    // `label` is the short form; the full myelin-… name hangs off it as a title and
     // stands in the expanded text, so the reference is still there.
     //
-    // cog-theme is deliberately absent from every script that reads it. It is one
+    // myelin-theme is deliberately absent from every script that reads it. It is one
     // key shared by five of them, and five copies of the same control would be
     // noise — it sits under Configuration instead.
     var SCRIPTS = [
       {
         id: "keyboard",
-        doc: "Touch keyboard, in two variants: letters, or a keypad for a number field. Slides in when a field takes focus and switches variant while it is up, because focus goes straight from a text field to a number field without it ever sliding away. Writes through the native value setter and fires a bubbling input event, so LiveView and React see the change. The letter layouts are the physical ones — German T1 and US ANSI — so the letter block carries ü + ö ä # and , . - or [ ] ; ' and , . / where a real keyboard has them, and Shift gives what it gives there: , → ; and - → _ in German, , → < and / → ? in English. ß has its own key and stays ß under Shift. The function keys follow iOS: Tab and Caps down the left edge, Del and Enter down the right, Shift at both ends of the bottom letter row, and a bottom row with nothing on it that types — Enter beside the dismiss key meant reaching for one and getting the other. Shift is one-shot, Caps is a key of its own and locks; Caps only affects letters, as on the physical thing. Tab walks the fields in document order, since a synthesised keydown moves no focus. Enter on a single-line field means \"done\" and puts the keyboard away; in a textarea it adds a line and the keyboard stays. The bar hangs 2px past the bottom edge on purpose — its height is fractional from the vh-based key sizes, and the last device pixel row rendered blended, showing the page through as a bright line on the DM panel. Symbols sit on two further levels behind ?123 and #+=, which differ by language; cog-keyboard-start decides which layer a field opens on. No caret keys — a tap into the text puts the caret where the finger is. The keypad's decimal separator follows the field: a comma assigned to an input[type=number] assigns nothing at all, so that one gets a point. Key sizes come from min(vw, vh), so a rotated panel does not hand half its height to the keyboard. cog-keyboard-skip keeps it off pages that have a keyboard of their own: regular expressions against the hostname, because the interesting rule is a shape rather than a list — a kiosk's own application is reached by address, and an address from cluster discovery changes with the network, so there is no host to write down. A pattern that does not compile is dropped with a warning rather than thrown.",
+        doc: "Touch keyboard, in two variants: letters, or a keypad for a number field. Slides in when a field takes focus and switches variant while it is up, because focus goes straight from a text field to a number field without it ever sliding away. Writes through the native value setter and fires a bubbling input event, so LiveView and React see the change. The letter layouts are the physical ones — German T1 and US ANSI — so the letter block carries ü + ö ä # and , . - or [ ] ; ' and , . / where a real keyboard has them, and Shift gives what it gives there: , → ; and - → _ in German, , → < and / → ? in English. ß has its own key and stays ß under Shift. The function keys follow iOS: Tab and Caps down the left edge, Del and Enter down the right, Shift at both ends of the bottom letter row, and a bottom row with nothing on it that types — Enter beside the dismiss key meant reaching for one and getting the other. Shift is one-shot, Caps is a key of its own and locks; Caps only affects letters, as on the physical thing. Tab walks the fields in document order, since a synthesised keydown moves no focus. Enter on a single-line field means \"done\" and puts the keyboard away; in a textarea it adds a line and the keyboard stays. The bar hangs 2px past the bottom edge on purpose — its height is fractional from the vh-based key sizes, and the last device pixel row rendered blended, showing the page through as a bright line on the DM panel. Symbols sit on two further levels behind ?123 and #+=, which differ by language; myelin-keyboard-start decides which layer a field opens on. No caret keys — a tap into the text puts the caret where the finger is. The keypad's decimal separator follows the field: a comma assigned to an input[type=number] assigns nothing at all, so that one gets a point. Key sizes come from min(vw, vh), so a rotated panel does not hand half its height to the keyboard. myelin-keyboard-skip keeps it off pages that have a keyboard of their own: regular expressions against the hostname, because the interesting rule is a shape rather than a list — a kiosk's own application is reached by address, and an address from cluster discovery changes with the network, so there is no host to write down. A pattern that does not compile is dropped with a warning rather than thrown.",
         opts: [
           { key: "keyboard-layout", label: "layout", kind: "enum", def: "de", values: ["de", "en"] },
           { key: "keyboard-numbers", label: "digit row", kind: "flag", on: "1" },
@@ -634,7 +634,7 @@
       },
       {
         id: "screensaver",
-        doc: "After a while without input, the Nerves logo drifts across a dark screen and bounces off the edges, changing colour on each hit. Any input wakes it, including pointer movement, and the tap that wakes it is swallowed whole — both the pointerdown and the click that follows, or waking on top of a link would follow the link. It also takes cog:screensaver:show and cog:screensaver:hide as commands, so an app can put the screen to sleep without waiting for the timer; try it with \"fake a push_event\" under Shortcuts. Dims the DOM only — not the panel backlight.",
+        doc: "After a while without input, the Nerves logo drifts across a dark screen and bounces off the edges, changing colour on each hit. Any input wakes it, including pointer movement, and the tap that wakes it is swallowed whole — both the pointerdown and the click that follows, or waking on top of a link would follow the link. It also takes myelin:screensaver:show and myelin:screensaver:hide as commands, so an app can put the screen to sleep without waiting for the timer; try it with \"fake a push_event\" under Shortcuts. Dims the DOM only — not the panel backlight.",
         opts: [
           {
             key: "screensaver-idle",
@@ -691,7 +691,7 @@
       },
       {
         id: "display-lock",
-        doc: "Full-screen PIN lock with a keypad. A visual lock, not access control — the PIN is in the DOM and anyone who can reach another URL walks around it. Lock it from anywhere with a cog:display-lock:lock event.",
+        doc: "Full-screen PIN lock with a keypad. A visual lock, not access control — the PIN is in the DOM and anyone who can reach another URL walks around it. Lock it from anywhere with a myelin:display-lock:lock event.",
         opts: [
           { key: "display-lock-pin", label: "pin", kind: "text", def: "0000" },
           {
@@ -767,7 +767,7 @@
       },
       {
         id: "domain-block",
-        doc: "Covers a page that is not on the allowlist, with a way back to the app. The one example configured entirely from the device — it has to work on pages that know nothing about it, so there is nothing a visited page can say to change it, cog-disable included. Its stylesheet goes into a shadow root, so the page's CSS cannot reshape it. Not a network filter: at document_end the page has already loaded, and real blocking is Cog's --content-filter.",
+        doc: "Covers a page that is not on the allowlist, with a way back to the app. The one example configured entirely from the device — it has to work on pages that know nothing about it, so there is nothing a visited page can say to change it, myelin-disable included. Its stylesheet goes into a shadow root, so the page's CSS cannot reshape it. Not a network filter: at document_end the page has already loaded, and real blocking is Cog's --content-filter.",
         // Config keys, not meta tags — by design, it takes nothing from the page.
         opts: [
           { label: "allowlist", kind: "config", def: "localhost:4000", note: "host[:port], *.example.com" },
@@ -796,7 +796,7 @@
     var data = window.__hxData || { trusted: false, scripts: [] };
 
     // What actually happened, straight from the scripts themselves.
-    var loaded = (window.cogUserscripts && window.cogUserscripts.loaded) || [];
+    var loaded = (window.myelin && window.myelin.loaded) || [];
 
     /* --- option controls --- */
 
@@ -827,8 +827,8 @@
       key.className = "hx-opt-key";
       key.textContent = opt.label;
       // The full name on hover, and in the expanded text below — the card would be
-      // unreadable with cog-statusbar-liveview-height spelled out on every line.
-      key.title = (opt.key ? "cog-" + opt.key : "test/config.json") + (opt.note ? " — " + opt.note : "");
+      // unreadable with myelin-statusbar-liveview-height spelled out on every line.
+      key.title = (opt.key ? "myelin-" + opt.key : "test/config.json") + (opt.note ? " — " + opt.note : "");
       row.appendChild(key);
 
       var ctl = document.createElement("span");
@@ -955,7 +955,7 @@
       el.appendChild(head);
 
       // One sentence, always visible, and it comes from the manifest rather than a
-      // second hand-kept copy here — the same sentence mix cog_userscripts.copy
+      // second hand-kept copy here — the same sentence mix myelin.copy
       // prints.
       var desc = document.createElement("p");
       desc.className = "hx-desc";
@@ -1006,7 +1006,7 @@
       doc.appendChild(prose);
 
       var tags = docs.opts
-        .map(function (o) { return o.key ? "cog-" + o.key : "config: " + o.label; })
+        .map(function (o) { return o.key ? "myelin-" + o.key : "config: " + o.label; })
         .join(" · ");
 
       if (tags) {
@@ -1112,7 +1112,7 @@
     // The canary earns its keep: the first version searched for an allowlist
     // entry, which was the harness's own origin, and window.origin matched it.
     document.getElementById("hx-leak").addEventListener("click", function () {
-      var needles = ["4711", "cog-canary-2f8a"];
+      var needles = ["4711", "myelin-canary-2f8a"];
       var found = [];
 
       function scan(label, object) {
@@ -1130,15 +1130,15 @@
       }
 
       scan("window", window);
-      if (window.cogUserscripts) scan("window.cogUserscripts", window.cogUserscripts);
-      if (window.cogOsk) scan("window.cogOsk", window.cogOsk);
+      if (window.myelin) scan("window.myelin", window.myelin);
+      if (window.myelin && window.myelin.osk) scan("window.myelin.osk", window.myelin.osk);
 
-      var cogKeys = window.cogUserscripts
-        ? Object.keys(window.cogUserscripts).join(", ")
+      var myelinKeys = window.myelin
+        ? Object.keys(window.myelin).join(", ")
         : "(absent)";
 
       document.getElementById("hx-leak-out").textContent =
-        "window.cogUserscripts holds: " + cogKeys + "\n" +
+        "window.myelin holds: " + myelinKeys + "\n" +
         "walked window for " + needles.join(" and ") + "\n\n" +
         (found.length
           ? "LEAK:\n" + found.join("\n")
@@ -1172,16 +1172,16 @@
     var log = document.getElementById("hx-log");
     var lines = [];
     [
-      "cog:keyboard:show", "cog:keyboard:hide",
-      "cog:screensaver:show", "cog:screensaver:hide",
-      "cog:navbar:ready",
-      "cog:statusbar:ready", "cog:statusbar-liveview:ready",
-      "cog:statusbar-liveview:failed",
-      "cog:display-lock:locked", "cog:display-lock:unlocked", "cog:display-lock:failed",
-      "cog:offline", "cog:online", "cog:konami"
+      "myelin:keyboard:show", "myelin:keyboard:hide",
+      "myelin:screensaver:show", "myelin:screensaver:hide",
+      "myelin:navbar:ready",
+      "myelin:statusbar:ready", "myelin:statusbar-liveview:ready",
+      "myelin:statusbar-liveview:failed",
+      "myelin:display-lock:locked", "myelin:display-lock:unlocked", "myelin:display-lock:failed",
+      "myelin:offline", "myelin:online", "myelin:konami"
     ].forEach(function (name) {
       window.addEventListener(name, function (event) {
-        // cog:keyboard:show carries which variant came up, and that is the one
+        // myelin:keyboard:show carries which variant came up, and that is the one
         // detail worth seeing in a log: it is how you tell that focus moving to a
         // number field switched the layout rather than doing nothing.
         var detail = event.detail && event.detail.layout ? "  (" + event.detail.layout + ")" : "";
@@ -1198,12 +1198,12 @@
     // happens at once and changes nothing.
 
     document.getElementById("hx-lock").addEventListener("click", function () {
-      window.dispatchEvent(new CustomEvent("cog:display-lock:lock"));
+      window.dispatchEvent(new CustomEvent("myelin:display-lock:lock"));
     });
 
     // This page is not a LiveView, so the phx: event a script listens for never
     // arrives on its own. What LiveView's client does with push_event(socket,
-    // "cog:screensaver:show", payload) is exactly this dispatch, so firing it by
+    // "myelin:screensaver:show", payload) is exactly this dispatch, so firing it by
     // hand is not a simulation — it is the same input a script gets on a device.
     //
     // The other direction, ctx.emit pushing, needs a real LiveView and cannot be
@@ -1212,18 +1212,18 @@
       // Which name to send is read off the overlay, the way "toggle offline" below
       // reads the banner — otherwise hide, the direction an app actually drives,
       // would be unreachable from here.
-      var overlay = document.getElementById("cog-screensaver");
+      var overlay = document.getElementById("myelin-screensaver");
       var visible = overlay && overlay.classList.contains("is-visible");
       var name = visible ? "screensaver:hide" : "screensaver:show";
 
       window.dispatchEvent(
-        new CustomEvent("phx:cog:" + name, { detail: { from: "harness" } })
+        new CustomEvent("phx:myelin:" + name, { detail: { from: "harness" } })
       );
     });
 
     document.getElementById("hx-offline").addEventListener("click", function () {
       // navigator.onLine is read-only, so fake the events the script listens to.
-      var el = document.getElementById("cog-offline-banner");
+      var el = document.getElementById("myelin-offline-banner");
       var offline = !(el && el.classList.contains("is-visible"));
       window.dispatchEvent(new Event(offline ? "offline" : "online"));
     });

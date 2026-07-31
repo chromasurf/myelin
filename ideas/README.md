@@ -1,20 +1,20 @@
 # Ideas
 
-Five userscripts that are **not finished** and **do not ship**. They are here to be
+Five scripts that are **not finished** and **do not ship**. They are here to be
 read, copied and reworked, not switched on.
 
 Nothing in this directory is in the Hex package or on the search path. A dependency
-cannot reach it and `mix cog_userscripts.copy` will not copy it — the only way to use
+cannot reach it and `mix myelin.copy` will not copy it — the only way to use
 one is to take the directory out of a checkout of this repository and put it in your
 own application, at which point it is your code and your decision.
 
 They follow the same format as the scripts in `priv/scripts`, so each one is a
-readable example of the shape. `mix cog_userscripts.harness` serves them too, so
+readable example of the shape. `mix myelin.harness` serves them too, so
 they can be tried in a browser.
 
 | Idea | What it shows, and what is unfinished about it |
 |---|---|
-| `probe-field` | Two fields in one shadow root, which is what `ctx.onFocus` exists for: focus moving between them dispatches nothing outside the tree. It is a test fixture, not a feature. |
+| `probe-field` | Two fields in one shadow root, which is the case the keyboard's own focus tracking has to catch: focus moving between them dispatches nothing outside the tree. It is a test fixture, not a feature. |
 | `display-lock` | A PIN panel, a focus trap, an attempt penalty. It is a **visual** lock only — the PIN is in the DOM and another URL walks around it. Real protection belongs in front of the pages, on the Elixir side. |
 | `konami` | The shortest whole script there is: a secret gesture, and confetti on a canvas. Mostly here as a shape to copy. |
 | `idle-reload` | Returning to a known state after a while. Trivial to write, and whether the screensaver should stop the countdown depends on the terminal — so it is a decision, not a default. |

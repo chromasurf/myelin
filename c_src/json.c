@@ -133,7 +133,7 @@ static char *decode_json_string(const char *src, size_t len)
  * token walking
  * ------------------------------------------------------------------ */
 
-int cus_json_skip(const jsmntok_t *tokens, int i)
+int myl_json_skip(const jsmntok_t *tokens, int i)
 {
     int n;
 
@@ -143,21 +143,21 @@ int cus_json_skip(const jsmntok_t *tokens, int i)
         i++;
         for (int k = 0; k < n; k++) {
             i++; /* the key is always a single token */
-            i = cus_json_skip(tokens, i);
+            i = myl_json_skip(tokens, i);
         }
         return i;
     case JSMN_ARRAY:
         n = tokens[i].size;
         i++;
         for (int k = 0; k < n; k++)
-            i = cus_json_skip(tokens, i);
+            i = myl_json_skip(tokens, i);
         return i;
     default:
         return i + 1;
     }
 }
 
-bool cus_json_eq(const char *json, const jsmntok_t *tok, const char *literal)
+bool myl_json_eq(const char *json, const jsmntok_t *tok, const char *literal)
 {
     size_t len = (size_t)(tok->end - tok->start);
 
@@ -165,17 +165,17 @@ bool cus_json_eq(const char *json, const jsmntok_t *tok, const char *literal)
            strncmp(json + tok->start, literal, len) == 0;
 }
 
-char *cus_json_dup(const char *json, const jsmntok_t *tok)
+char *myl_json_dup(const char *json, const jsmntok_t *tok)
 {
     return decode_json_string(json + tok->start, (size_t)(tok->end - tok->start));
 }
 
-bool cus_json_is_true(const char *json, const jsmntok_t *tok)
+bool myl_json_is_true(const char *json, const jsmntok_t *tok)
 {
     return tok->type == JSMN_PRIMITIVE && json[tok->start] == 't';
 }
 
-bool cus_json_is_false(const char *json, const jsmntok_t *tok)
+bool myl_json_is_false(const char *json, const jsmntok_t *tok)
 {
     return tok->type == JSMN_PRIMITIVE && json[tok->start] == 'f';
 }
@@ -236,9 +236,9 @@ static bool primitive_ok(const char *text, size_t len)
            literal_is(text, len, "null") || number_ok(text, len);
 }
 
-bool cus_json_slice_ok(const char *json, const jsmntok_t *tokens, int index)
+bool myl_json_slice_ok(const char *json, const jsmntok_t *tokens, int index)
 {
-    int end = cus_json_skip(tokens, index);
+    int end = myl_json_skip(tokens, index);
 
     for (int i = index; i < end; i++) {
         const jsmntok_t *tok = &tokens[i];

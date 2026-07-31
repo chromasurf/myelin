@@ -1,7 +1,7 @@
-/* The overlay's background colour is set from JS (cog-screensaver-bg), so it
+/* The overlay's background colour is set from JS (myelin-screensaver-bg), so it
    is deliberately absent here. */
 
-#cog-screensaver {
+#myelin-screensaver {
   position: fixed;
   inset: 0;
   z-index: 2147483646; /* below the debug overlay, above everything else */
@@ -18,7 +18,7 @@
   transition: opacity 600ms ease-out, visibility 0s linear 600ms;
 }
 
-#cog-screensaver.is-visible {
+#myelin-screensaver.is-visible {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -26,7 +26,7 @@
 }
 
 /* Clock sits centred and still; the logo drifts over it. */
-.cog-screensaver-clockbox {
+.myelin-screensaver-clockbox {
   position: absolute;
   inset: 0;
   display: flex;
@@ -38,11 +38,11 @@
 
 /* With the logo drifting across it, a full-strength clock turns both into an
    unreadable tangle. */
-.cog-screensaver-clockbox.has-logo {
+.myelin-screensaver-clockbox.has-logo {
   opacity: 0.3;
 }
 
-.cog-screensaver-time {
+.myelin-screensaver-time {
   font-size: clamp(64px, 22vw, 180px);
   font-weight: 200;
   font-variant-numeric: tabular-nums;
@@ -50,7 +50,7 @@
   line-height: 1;
 }
 
-.cog-screensaver-date {
+.myelin-screensaver-date {
   font-size: clamp(16px, 4vw, 28px);
   font-weight: 300;
   color: #8a9296;
@@ -58,7 +58,7 @@
 
 /* Positioned by JS via transform — cheaper than animating left/top, and it
    stays on the compositor. */
-.cog-screensaver-logo {
+.myelin-screensaver-logo {
   position: absolute;
   top: 0;
   left: 0;
@@ -67,18 +67,18 @@
   transition: filter 240ms linear;
 }
 
-.cog-screensaver-logo svg {
+.myelin-screensaver-logo svg {
   display: block;
   width: 100%;
   height: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #cog-screensaver,
-  #cog-screensaver.is-visible {
+  #myelin-screensaver,
+  #myelin-screensaver.is-visible {
     transition-duration: 1ms;
   }
-  .cog-screensaver-logo {
+  .myelin-screensaver-logo {
     transition: none;
   }
 }

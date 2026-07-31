@@ -5,7 +5,7 @@
  *
  * Shows URL, viewport, FPS, JS heap where WebKit exposes it, the scripts that
  * registered themselves, and the last few JS errors. That last part is the reason
- * it exists: an exception in a userscript is otherwise invisible unless somebody
+ * it exists: an exception in a script is otherwise invisible unless somebody
  * is watching the Cog log.
  *
  * Beta.
@@ -20,7 +20,7 @@ var TAP_WINDOW_MS = 1500;
 var KEPT_ERRORS = 5;
 
 var panel = document.createElement("div");
-panel.id = "cog-debug";
+panel.id = "myelin-debug";
 document.body.appendChild(panel);
 var errors = [];
 var taps = [];
@@ -61,7 +61,7 @@ function line(className, text) {
 
 function row(label, value) {
   var el = document.createElement("div");
-  el.className = "cog-debug-row";
+  el.className = "myelin-debug-row";
 
   var left = document.createElement("span");
   left.textContent = label;
@@ -89,10 +89,10 @@ function heap() {
 function render() {
   if (!visible) return;
 
-  var loaded = (window.cogUserscripts && window.cogUserscripts.loaded) || [];
+  var loaded = (window.myelin && window.myelin.loaded) || [];
 
   panel.textContent = "";
-  panel.appendChild(line("cog-debug-title", "cog_userscripts"));
+  panel.appendChild(line("myelin-debug-title", "myelin"));
   panel.appendChild(row("URL", location.host + location.pathname));
   panel.appendChild(
     row(
@@ -107,10 +107,10 @@ function render() {
 
   if (!errors.length) return;
 
-  panel.appendChild(line("cog-debug-title", "Errors"));
+  panel.appendChild(line("myelin-debug-title", "Errors"));
 
   errors.forEach(function (message) {
-    panel.appendChild(line("cog-debug-error", message));
+    panel.appendChild(line("myelin-debug-error", message));
   });
 }
 

@@ -1,4 +1,4 @@
-// Tests for c_src/cog_prelude.js — the `ctx` every userscript is wrapped around.
+// Tests for c_src/prelude.js — the `ctx` every script is wrapped around.
 //
 // The settings path needs no DOM: ctx.config checks `trusted` before it touches
 // the document, so with trusted: false the whole coercion runs against nothing but
@@ -15,7 +15,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const SOURCE = fs.readFileSync(
-  path.join(__dirname, "..", "..", "c_src", "cog_prelude.js"),
+  path.join(__dirname, "..", "..", "c_src", "prelude.js"),
   "utf8"
 );
 
@@ -119,20 +119,20 @@ test("a key nobody configured keeps its default", () => {
 });
 
 test("the script's own tag wins, and a shared tag is the fallback", () => {
-  // cog-theme reaches every script that asks for "theme"; cog-keyboard-theme
+  // myelin-theme reaches every script that asks for "theme"; myelin-keyboard-theme
   // overrides it for the keyboard alone.
-  const shared = ctxFor({}, { id: "keyboard", tags: { "cog-theme": "dark" } });
+  const shared = ctxFor({}, { id: "keyboard", tags: { "myelin-theme": "dark" } });
   assert.equal(shared.config("theme", "auto"), "dark");
 
   const own = ctxFor(
     {},
-    { id: "keyboard", tags: { "cog-theme": "dark", "cog-keyboard-theme": "light" } }
+    { id: "keyboard", tags: { "myelin-theme": "dark", "myelin-keyboard-theme": "light" } }
   );
   assert.equal(own.config("theme", "auto"), "light");
 });
 
 test("a tag beats the device configuration", () => {
-  const ctx = ctxFor({ idle: 300 }, { id: "screensaver", tags: { "cog-screensaver-idle": "30" } });
+  const ctx = ctxFor({ idle: 300 }, { id: "screensaver", tags: { "myelin-screensaver-idle": "30" } });
 
   assert.equal(ctx.config("idle", 120), 30);
 });
@@ -140,7 +140,7 @@ test("a tag beats the device configuration", () => {
 test("a tag can carry JSON, so a list or an object survives one", () => {
   const ctx = ctxFor(
     {},
-    { id: "keyboard", tags: { "cog-keyboard-skip": '["^localhost$", "^10\\\\."]' } }
+    { id: "keyboard", tags: { "myelin-keyboard-skip": '["^localhost$", "^10\\\\."]' } }
   );
 
   assert.deepEqual(ctx.config("skip", []), ["^localhost$", "^10\\."]);
@@ -154,7 +154,7 @@ test("an untrusted page cannot configure anything", () => {
     {
       id: "screensaver",
       trusted: false,
-      tags: { "cog-screensaver-idle": "1", "cog-theme": "dark" }
+      tags: { "myelin-screensaver-idle": "1", "myelin-theme": "dark" }
     }
   );
 
@@ -181,7 +181,7 @@ test("emit dispatches the prefixed name", () => {
   ctx.emit("screensaver:show", { from: "test" });
 
   assert.equal(seen.length, 1);
-  assert.equal(seen[0].type, "cog:screensaver:show");
+  assert.equal(seen[0].type, "myelin:screensaver:show");
   assert.deepEqual(seen[0].detail, { from: "test" });
 });
 
@@ -220,7 +220,7 @@ test("emit pushes the same name to a LiveView, and shrugs without one", () => {
   global.window = window;
 
   assert.equal(ctx.emit("screensaver:show", { a: 1 }), true);
-  assert.deepEqual(pushed, [[el, "cog:screensaver:show", { value: { a: 1 } }]]);
+  assert.deepEqual(pushed, [[el, "myelin:screensaver:show", { value: { a: 1 } }]]);
 });
 
 test("on listens for a script's name and for the application's", () => {
@@ -234,7 +234,7 @@ test("on listens for a script's name and for the application's", () => {
   const ctx = ctxFor({}, { window });
   ctx.on("screensaver:show", () => {});
 
-  assert.deepEqual(listeners, ["cog:screensaver:show", "phx:cog:screensaver:show"]);
+  assert.deepEqual(listeners, ["myelin:screensaver:show", "phx:myelin:screensaver:show"]);
 });
 
 test("the surface is three functions and one value", () => {

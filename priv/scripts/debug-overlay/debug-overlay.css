@@ -1,4 +1,4 @@
-#cog-debug {
+#myelin-debug {
   position: fixed;
   top: 12px;
   right: 12px;
@@ -22,11 +22,11 @@
   display: none;
 }
 
-#cog-debug.is-visible {
+#myelin-debug.is-visible {
   display: block;
 }
 
-.cog-debug-title {
+.myelin-debug-title {
   margin: 4px 0 2px;
   color: #7fb2d8;
   font-weight: 600;
@@ -35,28 +35,28 @@
   font-size: 11px;
 }
 
-.cog-debug-title:first-child {
+.myelin-debug-title:first-child {
   margin-top: 0;
 }
 
-.cog-debug-row {
+.myelin-debug-row {
   display: flex;
   justify-content: space-between;
   gap: 12px;
 }
 
-.cog-debug-row span:first-child {
+.myelin-debug-row span:first-child {
   color: #93a1ab;
 }
 
-.cog-debug-row span:last-child {
+.myelin-debug-row span:last-child {
   text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.cog-debug-error {
+.myelin-debug-error {
   color: #e88b7d;
   word-break: break-word;
   white-space: normal;

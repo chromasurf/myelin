@@ -2,9 +2,9 @@
    status bar, and two strips stacked there clipped each other. The offset
    below is set from JS when a status bar announces itself. */
 
-#cog-offline-banner {
+#myelin-offline-banner {
   position: fixed;
-  top: calc(var(--cog-offline-offset, 0px) + 12px);
+  top: calc(var(--myelin-offline-offset, 0px) + 12px);
   left: 50%;
   z-index: 2147483644;
 
@@ -31,13 +31,13 @@
   transition: opacity 220ms ease-out, transform 220ms ease-out;
 }
 
-#cog-offline-banner.is-visible {
+#myelin-offline-banner.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #cog-offline-banner {
+  #myelin-offline-banner {
     transition-duration: 1ms;
   }
 }

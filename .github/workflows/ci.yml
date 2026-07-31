@@ -37,9 +37,9 @@ jobs:
           node-version: "22"
       # The ideas are checked too. They ship nowhere, but a syntax error in one is
       # still a broken thing in the repository.
-      - name: Syntax-check every userscript
+      - name: Syntax-check every script
         run: |
-          for f in priv/scripts/*/*.js ideas/*/*.js c_src/cog_prelude.js; do
+          for f in priv/scripts/*/*.js ideas/*/*.js c_src/prelude.js; do
             node --check "$f" || exit 1
           done
       # The prelude and the wrapper are the code that runs inside *every* script, so
@@ -50,7 +50,7 @@ jobs:
           { printf '(function (ctx) {"use strict";'
             cat priv/scripts/keyboard/keyboard.js
             printf '\n})('
-            cat c_src/cog_prelude.js
+            cat c_src/prelude.js
             printf '("keyboard", true, {}, ""))\n'
           } > /tmp/wrapped.js
           node --check /tmp/wrapped.js

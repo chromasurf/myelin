@@ -31,7 +31,7 @@ static char *dup_range_lower(const char *start, size_t len)
     return out;
 }
 
-bool cus_glob_match(const char *glob, const char *text)
+bool myl_glob_match(const char *glob, const char *text)
 {
     const char *g = glob;
     const char *t = text;
@@ -62,7 +62,7 @@ bool cus_glob_match(const char *glob, const char *text)
     return *g == '\0';
 }
 
-void cus_match_pattern_clear(CusMatchPattern *p)
+void myl_match_pattern_clear(MylMatchPattern *p)
 {
     if (!p)
         return;
@@ -118,9 +118,9 @@ static void split_authority(const char *start, size_t len, size_t *host_len,
     }
 }
 
-bool cus_match_pattern_parse(const char *pattern, CusMatchPattern *out)
+bool myl_match_pattern_parse(const char *pattern, MylMatchPattern *out)
 {
-    CusMatchPattern p;
+    MylMatchPattern p;
 
     if (!pattern || !out)
         return false;
@@ -215,11 +215,11 @@ bool cus_match_pattern_parse(const char *pattern, CusMatchPattern *out)
     return true;
 
 fail:
-    cus_match_pattern_clear(&p);
+    myl_match_pattern_clear(&p);
     return false;
 }
 
-bool cus_split_url(const char *url, char **scheme_out, char **host_out,
+bool myl_split_url(const char *url, char **scheme_out, char **host_out,
                    char **port_out, char **path_out)
 {
     const char *sep = strstr(url, "://");
@@ -279,7 +279,7 @@ bool cus_split_url(const char *url, char **scheme_out, char **host_out,
     return true;
 }
 
-bool cus_match_pattern_matches(const CusMatchPattern *p, const char *url)
+bool myl_match_pattern_matches(const MylMatchPattern *p, const char *url)
 {
     char *scheme = NULL;
     char *host = NULL;
@@ -290,7 +290,7 @@ bool cus_match_pattern_matches(const CusMatchPattern *p, const char *url)
     if (!p || !url)
         return false;
 
-    if (!cus_split_url(url, &scheme, &host, &port, &path))
+    if (!myl_split_url(url, &scheme, &host, &port, &path))
         return false;
 
     if (p->all_urls) {
@@ -330,7 +330,7 @@ bool cus_match_pattern_matches(const CusMatchPattern *p, const char *url)
     if (p->port && (!port || strcmp(p->port, port) != 0))
         goto done;
 
-    ok = cus_glob_match(p->path, path);
+    ok = myl_glob_match(p->path, path);
 
 done:
     free(scheme);

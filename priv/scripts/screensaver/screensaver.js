@@ -51,7 +51,7 @@ var NERVES_SVG =
   "</g></g></svg>";
 
 var overlay = document.createElement("div");
-overlay.id = "cog-screensaver";
+overlay.id = "myelin-screensaver";
 overlay.setAttribute("aria-hidden", "true");
 overlay.style.background = ctx.config("bg", "#000");
 
@@ -63,13 +63,13 @@ if (SHOW_CLOCK) {
   var clockBox = document.createElement("div");
   // With the logo drifting over it, a full-strength clock turns both into an
   // unreadable tangle — so it steps back and lets the logo lead.
-  clockBox.className = "cog-screensaver-clockbox" + (SHOW_LOGO ? " has-logo" : "");
+  clockBox.className = "myelin-screensaver-clockbox" + (SHOW_LOGO ? " has-logo" : "");
 
   clock = document.createElement("div");
-  clock.className = "cog-screensaver-time";
+  clock.className = "myelin-screensaver-time";
 
   date = document.createElement("div");
-  date.className = "cog-screensaver-date";
+  date.className = "myelin-screensaver-date";
 
   clockBox.appendChild(clock);
   clockBox.appendChild(date);
@@ -78,7 +78,7 @@ if (SHOW_CLOCK) {
 
 if (SHOW_LOGO) {
   logo = document.createElement("div");
-  logo.className = "cog-screensaver-logo";
+  logo.className = "myelin-screensaver-logo";
   logo.innerHTML = NERVES_SVG;
   if (COLOR !== "nerves" && COLOR !== "cycle") logo.style.color = COLOR;
   overlay.appendChild(logo);

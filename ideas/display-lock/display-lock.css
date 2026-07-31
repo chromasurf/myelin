@@ -1,27 +1,27 @@
 /*
  * Goes into a shadow root, not into the page — the manifest lists it under
  * "shadow_css" and display-lock.js hangs it in itself. Hence :host for the
- * container instead of #cog-lock: inside a shadow root that is the element the
+ * container instead of #myelin-lock: inside a shadow root that is the element the
  * root belongs to.
  *
  * What the boundary gives us is that the page cannot *select* anything in here:
- * its `#cog-lock div { display: inline }` matches nothing.
+ * its `#myelin-lock div { display: inline }` matches nothing.
  *
  * What it does not give us is protection from inherited properties, and this is
  * worth spelling out because it is easy to assume otherwise. The host element
  * stands in the page's tree, so a page rule matches it — and with !important it
  * beats the :host rule below. Font, colour and line height then inherit straight
  * through the boundary. A page doing `* { font-family: cursive !important }`
- * rendered this lock in cursive until .cog-lock-root existed.
+ * rendered this lock in cursive until .myelin-lock-root existed.
  *
- * So the inherited properties are set on .cog-lock-root, inside the tree, where
+ * So the inherited properties are set on .myelin-lock-root, inside the tree, where
  * no page selector reaches and this file has the last word.
  *
  * No @font-face, and not by oversight: font faces declared inside a shadow root
  * are ignored — they have to be in the outer document, which is the page's.
  */
 
-.cog-lock-root {
+.myelin-lock-root {
   font-family: system-ui, -apple-system, "Liberation Sans", sans-serif;
   font-size: 16px;
   font-style: normal;
@@ -80,7 +80,7 @@
   transition: opacity 200ms ease-in, visibility 0s;
 }
 
-.cog-lock-box {
+.myelin-lock-box {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -90,20 +90,20 @@
   -webkit-user-select: none;
 }
 
-.cog-lock-title {
+.myelin-lock-title {
   font-size: 20px;
   font-weight: 300;
   letter-spacing: 0.04em;
 }
 
-.cog-lock-dots {
+.myelin-lock-dots {
   display: flex;
   gap: 12px;
   height: 14px;
   align-items: center;
 }
 
-.cog-lock-dot {
+.myelin-lock-dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -111,18 +111,18 @@
   transition: background 120ms linear;
 }
 
-.cog-lock-dot.is-filled {
+.myelin-lock-dot.is-filled {
   background: #e8ecee;
   border-color: #e8ecee;
 }
 
-.cog-lock-pad {
+.myelin-lock-pad {
   display: grid;
   grid-template-columns: repeat(3, 84px);
   gap: 10px;
 }
 
-.cog-lock-key {
+.myelin-lock-key {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -138,31 +138,31 @@
   cursor: default;
 }
 
-.cog-lock-key:active {
+.myelin-lock-key:active {
   background: #3c4145;
 }
 
-.cog-lock-key-special {
+.myelin-lock-key-special {
   font-size: 16px;
   background: #1b1e20;
 }
 
-.cog-lock-hint {
+.myelin-lock-hint {
   min-height: 18px;
   font-size: 13px;
   color: #8a9296;
 }
 
-.cog-lock-hint.is-error {
+.myelin-lock-hint.is-error {
   color: #f38ba8;
 }
 
 /* A short shake reads as "wrong" faster than any wording. */
-.cog-lock-box.is-shaking {
-  animation: cog-lock-shake 240ms ease-in-out;
+.myelin-lock-box.is-shaking {
+  animation: myelin-lock-shake 240ms ease-in-out;
 }
 
-@keyframes cog-lock-shake {
+@keyframes myelin-lock-shake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-9px); }
   40% { transform: translateX(9px); }
@@ -171,6 +171,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #cog-lock { transition-duration: 1ms; }
-  .cog-lock-box.is-shaking { animation: none; }
+  #myelin-lock { transition-duration: 1ms; }
+  .myelin-lock-box.is-shaking { animation: none; }
 }

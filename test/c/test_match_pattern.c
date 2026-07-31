@@ -4,41 +4,41 @@
 
 static bool matches(const char *pattern, const char *url)
 {
-    CusMatchPattern p;
+    MylMatchPattern p;
     bool result;
 
-    if (!cus_match_pattern_parse(pattern, &p))
+    if (!myl_match_pattern_parse(pattern, &p))
         return false;
 
-    result = cus_match_pattern_matches(&p, url);
-    cus_match_pattern_clear(&p);
+    result = myl_match_pattern_matches(&p, url);
+    myl_match_pattern_clear(&p);
     return result;
 }
 
 static bool parses(const char *pattern)
 {
-    CusMatchPattern p;
+    MylMatchPattern p;
 
-    if (!cus_match_pattern_parse(pattern, &p))
+    if (!myl_match_pattern_parse(pattern, &p))
         return false;
 
-    cus_match_pattern_clear(&p);
+    myl_match_pattern_clear(&p);
     return true;
 }
 
 void test_match_pattern(void)
 {
     /* --- glob --- */
-    CHECK(cus_glob_match("*", ""));
-    CHECK(cus_glob_match("*", "/anything"));
-    CHECK(cus_glob_match("/a*b", "/axxxb"));
-    CHECK(cus_glob_match("/a*b*c", "/abc"));
-    CHECK(!cus_glob_match("/a*b", "/axxx"));
-    CHECK(cus_glob_match("/exact", "/exact"));
-    CHECK(!cus_glob_match("/exact", "/exactly"));
+    CHECK(myl_glob_match("*", ""));
+    CHECK(myl_glob_match("*", "/anything"));
+    CHECK(myl_glob_match("/a*b", "/axxxb"));
+    CHECK(myl_glob_match("/a*b*c", "/abc"));
+    CHECK(!myl_glob_match("/a*b", "/axxx"));
+    CHECK(myl_glob_match("/exact", "/exact"));
+    CHECK(!myl_glob_match("/exact", "/exactly"));
     /* Backtracking must not give up too early. */
-    CHECK(cus_glob_match("/*a*a*a", "/aaa"));
-    CHECK(!cus_glob_match("/*a*a*a", "/aa"));
+    CHECK(myl_glob_match("/*a*a*a", "/aaa"));
+    CHECK(!myl_glob_match("/*a*a*a", "/aa"));
 
     /* --- <all_urls> --- */
     CHECK(matches("<all_urls>", "http://localhost:4000/"));

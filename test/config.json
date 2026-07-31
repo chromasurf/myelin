@@ -9,7 +9,7 @@
     "screensaver": {
       "enabled": true,
       "idle": 99999,
-      "canary": "cog-canary-2f8a"
+      "canary": "myelin-canary-2f8a"
     },
     "navbar": { "enabled": true, "home": "/test/harness.html" },
     "probe-field": { "enabled": true },

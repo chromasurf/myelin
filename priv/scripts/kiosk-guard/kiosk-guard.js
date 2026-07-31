@@ -40,7 +40,7 @@ if (guards("contextmenu")) {
 if (guards("selection")) {
   // A class rather than inline styles, so kiosk-guard.css can keep the exception for
   // text fields in one place.
-  document.documentElement.classList.add("cog-guard-no-select");
+  document.documentElement.classList.add("myelin-guard-no-select");
 
   window.addEventListener("selectstart", function (event) {
     if (!inTextField(eventTarget(event))) event.preventDefault();
@@ -84,11 +84,11 @@ if (guards("cursor")) {
   var hideTimer = null;
 
   var showCursor = function () {
-    document.documentElement.classList.remove("cog-guard-no-cursor");
+    document.documentElement.classList.remove("myelin-guard-no-cursor");
     window.clearTimeout(hideTimer);
 
     hideTimer = window.setTimeout(function () {
-      document.documentElement.classList.add("cog-guard-no-cursor");
+      document.documentElement.classList.add("myelin-guard-no-cursor");
     }, CURSOR_IDLE_MS);
   };
 

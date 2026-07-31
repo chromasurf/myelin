@@ -29,7 +29,7 @@ var FORMAT = ctx.config("format", "24h");
 var LABEL = ctx.config("text", "");
 
 var bar = document.createElement("div");
-bar.id = "cog-statusbar";
+bar.id = "myelin-statusbar";
 bar.setAttribute("role", "status");
 bar.style.height = HEIGHT + "px";
 bar.style.background = ctx.config("bg", "#1c1f21");
@@ -37,7 +37,7 @@ bar.style.color = ctx.config("fg", "#e8ecee");
 
 function cell(name) {
   var el = document.createElement("span");
-  el.className = "cog-statusbar-cell cog-statusbar-" + name;
+  el.className = "myelin-statusbar-cell myelin-statusbar-" + name;
   return el;
 }
 

@@ -1,8 +1,8 @@
 /*
- * cog_prelude.js — builds the `ctx` every userscript is wrapped around.
+ * prelude.js — builds the `ctx` every script is wrapped around.
  *
  * The loader evaluates this to a function and calls it once per script, then hands
- * the result in as the script's only parameter. A userscript is otherwise plain
+ * the result in as the script's only parameter. A script is otherwise plain
  * JavaScript: the file body is the script, because the loader already wraps it in a
  * function of its own.
  *
@@ -35,7 +35,7 @@
   // A list-valued setting arrives in three shapes, depending on where it came from,
   // and all three look right where they are written:
   //
-  //     <meta name="cog-statusbar-items" content="clock url">   "clock url"
+  //     <meta name="myelin-statusbar-items" content="clock url">   "clock url"
   //     %{items: "clock url"}                                   "clock url"
   //     %{items: ["clock", "url"]}                              ["clock", "url"]
   //
@@ -72,8 +72,8 @@
   // then the device configuration, then a <meta> tag — and the tag only on an origin
   // the device trusts.
   //
-  // Two tag names are tried, this script's own and then the bare one. So cog-theme
-  // reaches every script that asks for "theme", while cog-keyboard-theme overrides it
+  // Two tag names are tried, this script's own and then the bare one. So myelin-theme
+  // reaches every script that asks for "theme", while myelin-keyboard-theme overrides it
   // for the keyboard alone.
   function read(name, fallback) {
     if (device && Object.prototype.hasOwnProperty.call(device, name)) {
@@ -85,8 +85,8 @@
     if (!trusted) return fallback;
 
     var el =
-      document.querySelector('meta[name="cog-' + id + "-" + name + '"]') ||
-      document.querySelector('meta[name="cog-' + name + '"]');
+      document.querySelector('meta[name="myelin-' + id + "-" + name + '"]') ||
+      document.querySelector('meta[name="myelin-' + name + '"]');
 
     var v = el && el.content.trim();
     if (!v) return fallback;
@@ -123,7 +123,7 @@
     var el = document.querySelector("[data-phx-main]");
     if (!el) return false;
 
-    socket.js().push(el, "cog:" + name, { value: payload || {} });
+    socket.js().push(el, "myelin:" + name, { value: payload || {} });
     return true;
   }
 
@@ -132,14 +132,14 @@
   // prefix in both directions, so an application deals in one spelling and can route
   // the whole layer through a single clause:
   //
-  //     def handle_event("cog:" <> event, params, socket)
+  //     def handle_event("myelin:" <> event, params, socket)
   //
   // Which it needs: an unmatched handle_event/3 is a FunctionClauseError in the view
   // process, not an ignored message. Returns whether the push happened — false on a
   // page with no LiveView, which is every foreign page the kiosk visits, and there it
   // is a no-op rather than a throw.
   function emit(name, detail) {
-    window.dispatchEvent(new CustomEvent("cog:" + name, { detail: detail || {} }));
+    window.dispatchEvent(new CustomEvent("myelin:" + name, { detail: detail || {} }));
 
     return push(name, detail);
   }
@@ -147,11 +147,11 @@
   // Both spellings of the same event, so a script does not care whether it was
   // another script or the application that sent it:
   //
-  //     ctx.emit("screensaver:show")                       →  cog:screensaver:show
-  //     push_event(socket, "cog:screensaver:show", %{})    →  phx:cog:screensaver:show
+  //     ctx.emit("screensaver:show")                       →  myelin:screensaver:show
+  //     push_event(socket, "myelin:screensaver:show", %{})    →  phx:myelin:screensaver:show
   function on(name, handler) {
-    window.addEventListener("cog:" + name, handler);
-    window.addEventListener("phx:cog:" + name, handler);
+    window.addEventListener("myelin:" + name, handler);
+    window.addEventListener("phx:myelin:" + name, handler);
   }
 
   /* --- ran, which is not the same as built something ------------------------ */
@@ -160,7 +160,7 @@
   // run. This list means "was injected", not "put something on the screen" — a script
   // that looks at the page and decides to stay out of the way, as domain-block does
   // on a host it allows, must not read as one that failed to load.
-  var registry = (window.cogUserscripts = window.cogUserscripts || { loaded: [] });
+  var registry = (window.myelin = window.myelin || { loaded: [] });
   if (registry.loaded.indexOf(id) === -1) registry.loaded.push(id);
 
   return {

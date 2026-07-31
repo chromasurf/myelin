@@ -40,7 +40,7 @@ var AUTOHIDE = ctx.config("autohide", false);
 var THEME = ctx.config("theme", "auto");
 
 var bar = document.createElement("div");
-bar.id = "cog-navbar";
+bar.id = "myelin-navbar";
 
 /* --- navigation ------------------------------------------------------- */
 
@@ -66,23 +66,23 @@ function normalise(input) {
 
 bar.setAttribute("role", "toolbar");
 bar.setAttribute("aria-label", "Address bar");
-bar.style.setProperty("--cog-nav-h", HEIGHT + "px");
-bar.style.setProperty("--cog-nav-collapsed", COLLAPSED + "px");
+bar.style.setProperty("--myelin-nav-h", HEIGHT + "px");
+bar.style.setProperty("--myelin-nav-collapsed", COLLAPSED + "px");
 
-if (ACCENT) bar.style.setProperty("--cog-nav-accent", ACCENT);
+if (ACCENT) bar.style.setProperty("--myelin-nav-accent", ACCENT);
 
 if (ctx.config("font", "") === "system") {
-  bar.style.setProperty("--cog-nav-font", '"Liberation Mono", monospace');
+  bar.style.setProperty("--myelin-nav-font", '"Liberation Mono", monospace');
 }
 
 if (THEME === "light" || THEME === "dark") {
-  bar.className = "cog-nav-" + THEME;
+  bar.className = "myelin-nav-" + THEME;
 }
 
 function button(name, label) {
   var el = document.createElement("button");
   el.type = "button";
-  el.className = "cog-nav-btn cog-nav-" + name;
+  el.className = "myelin-nav-btn myelin-nav-" + name;
   el.setAttribute("aria-label", label);
 
   // Without this, tapping a button moves focus out of the address field first;
@@ -98,7 +98,7 @@ function button(name, label) {
 
 function separator() {
   var el = document.createElement("span");
-  el.className = "cog-nav-sep";
+  el.className = "myelin-nav-sep";
   return el;
 }
 
@@ -128,7 +128,7 @@ function addItem(name) {
 
     field = document.createElement("input");
     field.type = "url";
-    field.className = "cog-nav-url";
+    field.className = "myelin-nav-url";
     field.setAttribute("aria-label", "Address");
     field.setAttribute("spellcheck", "false");
     field.setAttribute("autocomplete", "off");
@@ -193,7 +193,7 @@ function setCollapsed(next) {
 // back — so it exists whether autohide is on or not.
 var collar = document.createElement("button");
 collar.type = "button";
-collar.className = "cog-nav-collar";
+collar.className = "myelin-nav-collar";
 collar.setAttribute("aria-label", "Show the address bar");
 collar.addEventListener("click", function () {
   setCollapsed(false);

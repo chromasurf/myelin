@@ -1,7 +1,7 @@
-/* Colours and height come from JS (cog-statusbar-bg / -fg / -height), so they
+/* Colours and height come from JS (myelin-statusbar-bg / -fg / -height), so they
    are deliberately absent here. */
 
-#cog-statusbar {
+#myelin-statusbar {
   position: fixed;
   top: 0;
   left: 0;
@@ -25,46 +25,46 @@
   transition: opacity 200ms ease-out;
 }
 
-#cog-statusbar.is-dimmed {
+#myelin-statusbar.is-dimmed {
   opacity: 0;
 }
 
-.cog-statusbar-cell {
+.myelin-statusbar-cell {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 /* The URL takes what is left and gives way first when space runs short. */
-.cog-statusbar-url {
+.myelin-statusbar-url {
   flex: 1 1 auto;
   min-width: 0;
   opacity: 0.72;
 }
 
-.cog-statusbar-label {
+.myelin-statusbar-label {
   font-weight: 600;
   letter-spacing: 0.04em;
 }
 
-.cog-statusbar-clock {
+.myelin-statusbar-clock {
   font-variant-numeric: tabular-nums;
 }
 
-.cog-statusbar-online {
+.myelin-statusbar-online {
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 0.08em;
   opacity: 0.6;
 }
 
-.cog-statusbar-online.is-offline {
+.myelin-statusbar-online.is-offline {
   color: #f38ba8;
   opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #cog-statusbar {
+  #myelin-statusbar {
     transition-duration: 1ms;
   }
 }

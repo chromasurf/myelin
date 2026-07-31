@@ -1,18 +1,18 @@
 # Lowercase on purpose: inets' mod_esi puts the module name in the URL, and
 # "Elixir.Mix.Tasks.Harness" in every script tag would be noise. This is the only
-# reason not to name it CogUserscripts.Harness.
-defmodule :cog_harness do
+# reason not to name it Myelin.Harness.
+defmodule :myelin_harness do
   @moduledoc """
-  The wrapping half of `mix cog_userscripts.harness`.
+  The wrapping half of `mix myelin.harness`.
 
-  On a device the extension wraps each userscript before evaluating it — the
+  On a device the extension wraps each script before evaluating it — the
   script never sees its own file, it sees a function it is the body of. A harness
   that served the files plainly would be testing something else, and the two
   properties that matter would be unobservable: that a script only ever
   gets its own settings, and that a page it does not trust cannot switch it off.
 
   So the wrapping happens here, in the server, which is where it happens on a
-  device too — outside the page. The prelude is read from `c_src/cog_prelude.js`,
+  device too — outside the page. The prelude is read from `c_src/prelude.js`,
   the same file the Makefile compiles into the extension, so there is one copy of
   it and not two that drift.
 
@@ -50,7 +50,7 @@ defmodule :cog_harness do
   end
 
   @doc """
-  One userscript, wrapped exactly as the extension wraps it.
+  One script, wrapped exactly as the extension wraps it.
 
   A script that is switched off gets an empty body rather than a wrapped one:
   on a device it is not injected at all, and a harness that loaded it anyway
@@ -106,7 +106,7 @@ defmodule :cog_harness do
       prelude() <>
       "(" <>
       argument <>
-      "))\n//# sourceURL=cog-userscript:///#{id}/#{file}\n" <>
+      "))\n//# sourceURL=myelin:///#{id}/#{file}\n" <>
       if(source_map, do: source_map <> "\n", else: "")
   end
 
@@ -119,11 +119,11 @@ defmodule :cog_harness do
     end
   end
 
-  defp prelude, do: File.read!(Path.join([root(), "c_src", "cog_prelude.js"]))
+  defp prelude, do: File.read!(Path.join([root(), "c_src", "prelude.js"]))
 
   # --- the decision -----------------------------------------------------------
 
-  # Mirrors cus_script_enabled: manifest default, device override, then the meta
+  # Mirrors myl_script_enabled: manifest default, device override, then the meta
   # tags — and those only on a trusted origin. Two implementations of one rule is
   # a cost; each checking the other is the return.
   defp enabled?(manifest, id, config, params, trusted) do
@@ -214,7 +214,7 @@ defmodule :cog_harness do
 
   # Which directory a script lives in. priv/scripts first, so a shipped script wins
   # an id it shares with an idea — the same way a later entry in
-  # COG_USERSCRIPTS_PATH replaces an earlier one on the device.
+  # MYELIN_PATH replaces an earlier one on the device.
   defp dir(id) do
     Enum.find(@dirs, "ideas", &File.dir?(Path.join([root(), &1, id])))
   end
@@ -240,7 +240,7 @@ defmodule :cog_harness do
   end
 
   # The query string reaches the filesystem, so anything that could climb out of a
-  # source directory is refused. cus_relative_path_ok is the same guard on the C
+  # source directory is refused. myl_relative_path_ok is the same guard on the C
   # side.
   defp safe?(nil), do: false
 
@@ -253,7 +253,7 @@ defmodule :cog_harness do
 
   defp params(input), do: input |> to_string() |> URI.decode_query()
 
-  defp root, do: Application.get_env(:cog_userscripts, :harness_root, File.cwd!())
+  defp root, do: Application.get_env(:myelin, :harness_root, File.cwd!())
 
   defp json(value), do: value |> :json.encode() |> IO.iodata_to_binary()
 

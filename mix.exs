@@ -1,12 +1,12 @@
-defmodule CogUserscripts.MixProject do
+defmodule Myelin.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
-  @source_url "https://github.com/chromasurf/cog_userscripts"
+  @version "0.2.0"
+  @source_url "https://github.com/chromasurf/myelin"
 
   def project do
     [
-      app: :cog_userscripts,
+      app: :myelin,
       version: @version,
       elixir: "~> 1.15",
       # The native part is a WPE WebKit web process extension, not a NIF. It is
@@ -25,7 +25,7 @@ defmodule CogUserscripts.MixProject do
   end
 
   def application do
-    # No process and no supervision tree — but cog_args/0 and cog_env/1 warn
+    # No process and no supervision tree — but browser_args/0 and browser_env/1 warn
     # through Logger, so it is a real dependency rather than an assumption that
     # every consumer happens to have it started.
     [extra_applications: [:logger]]
@@ -47,7 +47,8 @@ defmodule CogUserscripts.MixProject do
   end
 
   defp description do
-    "Userscript loader for the Cog kiosk browser (WPE WebKit web process extension)"
+    "Kiosk UI layer for Nerves: a WPE WebKit web process extension that injects " <>
+      "JS and CSS into every session of the Cog browser"
   end
 
   # `files` is spelled out because the default list would break this package in both
@@ -86,7 +87,7 @@ defmodule CogUserscripts.MixProject do
       source_ref: "v#{@version}",
       source_url: @source_url,
       groups_for_modules: [
-        "Mix tasks": [Mix.Tasks.CogUserscripts.Install]
+        "Mix tasks": [Mix.Tasks.Myelin.Copy, Mix.Tasks.Myelin.Harness]
       ]
     ]
   end

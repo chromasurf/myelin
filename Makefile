@@ -17,7 +17,7 @@
 #      dlopen()s this module. Do not add -Wl,--no-undefined.
 
 PREFIX := priv/webext
-TARGET := $(PREFIX)/libcog_userscripts.so
+TARGET := $(PREFIX)/libmyelin.so
 
 SOURCES := c_src/extension.c c_src/injector.c c_src/manifest.c \
            c_src/config.c c_src/match_pattern.c c_src/json.c c_src/log.c
@@ -27,8 +27,8 @@ SOURCES := c_src/extension.c c_src/injector.c c_src/manifest.c \
 # byte array rather than a string literal: escaping one would break the day
 # someone puts a backslash in the JS, and this cannot. Regenerated on every build
 # and gitignored, so it can never be stale.
-PRELUDE_JS := c_src/cog_prelude.js
-PRELUDE_H := c_src/generated/cog_prelude.h
+PRELUDE_JS := c_src/prelude.js
+PRELUDE_H := c_src/generated/prelude.h
 
 .PHONY: all clean check prelude
 
@@ -46,7 +46,7 @@ prelude: $(PRELUDE_H)
 $(PRELUDE_H): $(PRELUDE_JS)
 	@mkdir -p $(dir $@)
 	@echo "/* Generated from $(PRELUDE_JS). Do not edit. */" > $@
-	@echo "static const char kCogPrelude[] = {" >> $@
+	@echo "static const char kMyelinPrelude[] = {" >> $@
 	@od -An -v -tu1 $< | awk '{ for (i = 1; i <= NF; i++) printf "%s,", $$i }' >> $@
 	@echo "0 };" >> $@
 
@@ -56,7 +56,7 @@ $(PRELUDE_H): $(PRELUDE_JS)
 ifeq ($(CROSSCOMPILE),)
 
 all:
-	@echo "cog_userscripts: no Nerves target (CROSSCOMPILE unset), skipping the native build"
+	@echo "myelin: no Nerves target (CROSSCOMPILE unset), skipping the native build"
 
 clean:
 	rm -rf $(PREFIX) $(dir $(PRELUDE_H))
@@ -92,7 +92,7 @@ ifeq ($(WPE_CFLAGS),)
 $(error pkg-config found no wpe-web-process-extension-2.0 in $(NERVES_SDK_SYSROOT)/usr/lib/pkgconfig)
 endif
 
-# -fvisibility=hidden keeps our cus_* symbols out of the web process, where
+# -fvisibility=hidden keeps our myl_* symbols out of the web process, where
 # they would otherwise sit in the same global namespace as WebKit's. Only the
 # entry point is exported, via G_MODULE_EXPORT.
 BUILD_CFLAGS := $(CFLAGS) -std=gnu99 -Wall -Wextra -fPIC -fvisibility=hidden \

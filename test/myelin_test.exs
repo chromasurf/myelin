@@ -1,17 +1,17 @@
-defmodule CogUserscriptsTest do
+defmodule MyelinTest do
   use ExUnit.Case, async: true
 
   describe "paths" do
     test "extension_dir sits under priv" do
-      assert String.ends_with?(CogUserscripts.extension_dir(), "/priv/webext")
+      assert String.ends_with?(Myelin.extension_dir(), "/priv/webext")
     end
 
     test "extension_path names the shared object" do
-      assert String.ends_with?(CogUserscripts.extension_path(), "libcog_userscripts.so")
+      assert String.ends_with?(Myelin.extension_path(), "libmyelin.so")
     end
 
     test "priv holds the scripts and the extension, and nothing else" do
-      priv = Path.dirname(CogUserscripts.extension_dir())
+      priv = Path.dirname(Myelin.extension_dir())
 
       # The scripts ship in priv/scripts, which is the only reason they exist on a
       # device at all: Mix copies a dependency's priv/ and ebin/ into the build and
@@ -23,7 +23,7 @@ defmodule CogUserscriptsTest do
     end
 
     test "bundled_dir points at the scripts that ship" do
-      assert File.dir?(Path.join(CogUserscripts.bundled_dir(), "keyboard"))
+      assert File.dir?(Path.join(Myelin.bundled_dir(), "keyboard"))
     end
   end
 
@@ -32,43 +32,43 @@ defmodule CogUserscriptsTest do
       # This is what lets a script run on configuration alone. If it ever returns
       # only the caller's directories again, switching a script on stops working and
       # the failure is a script that silently never loads.
-      assert [CogUserscripts.bundled_dir()] == CogUserscripts.script_path()
+      assert [Myelin.bundled_dir()] == Myelin.script_path()
     end
 
     test "bundled first, then configured, then passed" do
-      Application.put_env(:cog_userscripts, :extra_dirs, ["/configured"])
-      on_exit(fn -> Application.delete_env(:cog_userscripts, :extra_dirs) end)
+      Application.put_env(:myelin, :extra_dirs, ["/configured"])
+      on_exit(fn -> Application.delete_env(:myelin, :extra_dirs) end)
 
       # Later entries win in the loader, so this order is what lets a copy in an
       # application replace the script it was copied from.
-      assert [CogUserscripts.bundled_dir(), "/configured", "/passed"] ==
-               CogUserscripts.script_path(extra: ["/passed"])
+      assert [Myelin.bundled_dir(), "/configured", "/passed"] ==
+               Myelin.script_path(extra: ["/passed"])
     end
   end
 
-  describe "cog integration" do
-    test "cog_env carries the search path colon separated" do
-      bundled = CogUserscripts.bundled_dir()
+  describe "browser integration" do
+    test "browser_env carries the search path colon separated" do
+      bundled = Myelin.bundled_dir()
 
-      assert [{"COG_USERSCRIPTS_PATH", path}] =
-               CogUserscripts.cog_env(extra: ["/app/one", "/app/two"])
+      assert [{"MYELIN_PATH", path}] =
+               Myelin.browser_env(extra: ["/app/one", "/app/two"])
 
       assert path == "#{bundled}:/app/one:/app/two"
     end
 
     test "the search path is always set, because the bundled scripts are always on it" do
-      assert [{"COG_USERSCRIPTS_PATH", path}] = CogUserscripts.cog_env()
-      assert path == CogUserscripts.bundled_dir()
+      assert [{"MYELIN_PATH", path}] = Myelin.browser_env()
+      assert path == Myelin.bundled_dir()
     end
 
-    test "cog_args reflects whether the extension was built" do
+    test "browser_args reflects whether the extension was built" do
       # On the host the native build is skipped, so this exercises the absent
       # branch; on a device build it exercises the present one.
-      if CogUserscripts.available?() do
-        assert ["--web-extensions-dir=" <> dir] = CogUserscripts.cog_args()
-        assert dir == CogUserscripts.extension_dir()
+      if Myelin.available?() do
+        assert ["--web-extensions-dir=" <> dir] = Myelin.browser_args()
+        assert dir == Myelin.extension_dir()
       else
-        assert CogUserscripts.cog_args() == []
+        assert Myelin.browser_args() == []
       end
     end
   end
@@ -76,32 +76,32 @@ defmodule CogUserscriptsTest do
   describe "device configuration" do
     setup do
       on_exit(fn ->
-        Application.delete_env(:cog_userscripts, :trusted_origins)
-        Application.delete_env(:cog_userscripts, :scripts)
+        Application.delete_env(:myelin, :trusted_origins)
+        Application.delete_env(:myelin, :scripts)
       end)
     end
 
     test "nothing configured means no variable at all" do
-      assert %{} == CogUserscripts.config()
-      refute List.keymember?(CogUserscripts.cog_env(extra: ["/a"]), "COG_USERSCRIPTS_CONFIG", 0)
+      assert %{} == Myelin.config()
+      refute List.keymember?(Myelin.browser_env(extra: ["/a"]), "MYELIN_CONFIG", 0)
     end
 
     test "only what is set ends up in the map" do
-      Application.put_env(:cog_userscripts, :trusted_origins, ["http://localhost:4000"])
+      Application.put_env(:myelin, :trusted_origins, ["http://localhost:4000"])
 
-      assert %{trusted_origins: ["http://localhost:4000"]} == CogUserscripts.config()
+      assert %{trusted_origins: ["http://localhost:4000"]} == Myelin.config()
     end
 
-    test "cog_env encodes the configuration as JSON the extension can read back" do
-      Application.put_env(:cog_userscripts, :trusted_origins, ["http://localhost:4000"])
+    test "browser_env encodes the configuration as JSON the extension can read back" do
+      Application.put_env(:myelin, :trusted_origins, ["http://localhost:4000"])
 
-      Application.put_env(:cog_userscripts, :scripts, %{
+      Application.put_env(:myelin, :scripts, %{
         "domain-block" => %{allowlist: ["localhost:4000"], home: "http://localhost:4000/"},
         "screensaver" => %{enabled: false, idle: 300}
       })
 
-      assert [{"COG_USERSCRIPTS_PATH", _}, {"COG_USERSCRIPTS_CONFIG", json}] =
-               CogUserscripts.cog_env()
+      assert [{"MYELIN_PATH", _}, {"MYELIN_CONFIG", json}] =
+               Myelin.browser_env()
 
       # Decoded rather than compared as a string: map order is not ours to
       # predict, and what matters is that atom keys arrive as strings — which is
@@ -121,33 +121,33 @@ defmodule CogUserscriptsTest do
     test "a keyword list is as good a spelling as a map" do
       # [keyboard: %{...}] and %{"keyboard" => %{...}} are the same thing to read
       # and indistinguishable at a glance in a config file, but :json.encode/1
-      # refuses a keyword list outright. Since cog_env/1 is called while the caller
+      # refuses a keyword list outright. Since browser_env/1 is called while the caller
       # builds its supervision tree, such a raise would take the Cog daemon down
       # with it and the device would boot to a black panel.
-      Application.put_env(:cog_userscripts, :scripts, keyboard: %{layout: "en"})
+      Application.put_env(:myelin, :scripts, keyboard: %{layout: "en"})
 
-      assert [{"COG_USERSCRIPTS_PATH", _}, {"COG_USERSCRIPTS_CONFIG", json}] =
-               CogUserscripts.cog_env()
+      assert [{"MYELIN_PATH", _}, {"MYELIN_CONFIG", json}] =
+               Myelin.browser_env()
 
       assert %{"scripts" => %{"keyboard" => %{"layout" => "en"}}} == :json.decode(json)
     end
 
     test "a keyword list inside a script's settings encodes too" do
-      Application.put_env(:cog_userscripts, :scripts, %{"statusbar" => [items: ["clock"]]})
+      Application.put_env(:myelin, :scripts, %{"statusbar" => [items: ["clock"]]})
 
-      assert [{"COG_USERSCRIPTS_PATH", _}, {"COG_USERSCRIPTS_CONFIG", json}] =
-               CogUserscripts.cog_env()
+      assert [{"MYELIN_PATH", _}, {"MYELIN_CONFIG", json}] =
+               Myelin.browser_env()
 
       assert %{"scripts" => %{"statusbar" => %{"items" => ["clock"]}}} == :json.decode(json)
     end
 
     test "a list that is not a keyword list stays a list" do
-      Application.put_env(:cog_userscripts, :trusted_origins, ["http://a.test"])
+      Application.put_env(:myelin, :trusted_origins, ["http://a.test"])
 
-      Application.put_env(:cog_userscripts, :scripts, %{"statusbar" => %{items: ["clock", "url"]}})
+      Application.put_env(:myelin, :scripts, %{"statusbar" => %{items: ["clock", "url"]}})
 
-      assert [{"COG_USERSCRIPTS_PATH", _}, {"COG_USERSCRIPTS_CONFIG", json}] =
-               CogUserscripts.cog_env()
+      assert [{"MYELIN_PATH", _}, {"MYELIN_CONFIG", json}] =
+               Myelin.browser_env()
 
       assert %{
                "trusted_origins" => ["http://a.test"],
@@ -156,9 +156,9 @@ defmodule CogUserscriptsTest do
     end
 
     test "an empty list for scripts means nothing configured, not a value of the wrong shape" do
-      Application.put_env(:cog_userscripts, :scripts, [])
+      Application.put_env(:myelin, :scripts, [])
 
-      assert %{} == CogUserscripts.config()
+      assert %{} == Myelin.config()
     end
 
     test "a value JSON cannot carry is reported, not raised" do
@@ -166,25 +166,25 @@ defmodule CogUserscriptsTest do
       # purpose — "a typo in runtime.exs must not take every script down with it".
       # Raising on this side, before the extension ever sees the value, would make
       # that promise worthless.
-      Application.put_env(:cog_userscripts, :scripts, %{"a" => %{stamp: {2026, 7, 29}}})
+      Application.put_env(:myelin, :scripts, %{"a" => %{stamp: {2026, 7, 29}}})
 
       log =
         ExUnit.CaptureLog.capture_log(fn ->
           # The search path still arrives; only the configuration is dropped.
-          assert [{"COG_USERSCRIPTS_PATH", _}] = CogUserscripts.cog_env(extra: ["/app"])
+          assert [{"MYELIN_PATH", _}] = Myelin.browser_env(extra: ["/app"])
         end)
 
       assert log =~ "cannot be encoded as JSON"
     end
 
     test "reading the configuration writes nothing" do
-      Application.put_env(:cog_userscripts, :scripts, %{"keyboard" => %{layout: "en"}})
+      Application.put_env(:myelin, :scripts, %{"keyboard" => %{layout: "en"}})
 
       before = tree()
 
-      CogUserscripts.config()
-      CogUserscripts.cog_env(extra: ["/app"])
-      CogUserscripts.cog_args()
+      Myelin.config()
+      Myelin.browser_env(extra: ["/app"])
+      Myelin.browser_args()
 
       # An earlier design for this wrote a config file at boot, which is why the
       # absence of one is asserted rather than assumed: these helpers only read.
@@ -195,7 +195,7 @@ defmodule CogUserscriptsTest do
     # plausibly land; the project root covers a stray file in the cwd. Both are
     # cheap to walk, unlike the whole checkout.
     defp tree do
-      priv = Path.dirname(CogUserscripts.extension_dir())
+      priv = Path.dirname(Myelin.extension_dir())
       root = Path.expand("..", __DIR__)
 
       paths =
@@ -237,7 +237,7 @@ defmodule CogUserscriptsTest do
           assert File.exists?(Path.join(dir, file)),
                  "#{path} references #{file}, which does not exist"
 
-          # cus_relative_path_ok() allows a subdirectory — a build writes into one
+          # myl_relative_path_ok() allows a subdirectory — a build writes into one
           # — but nothing that could leave the script's directory. A manifest that
           # breaks that rule loads nothing and only warns into the Cog log, so it
           # is caught here instead.
@@ -324,7 +324,7 @@ defmodule CogUserscriptsTest do
 
     test "a script is stable or says it is beta, and the copy task agrees" do
       # Two statements about the same thing — the header a reader sees first, and the
-      # list mix cog_userscripts.copy groups by. This is what keeps them in step.
+      # list mix myelin.copy groups by. This is what keeps them in step.
       stable =
         bundled_sources()
         |> Enum.reject(fn {_id, source} -> source =~ ~r/^ \* Beta\.$/m end)

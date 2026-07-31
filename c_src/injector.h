@@ -5,8 +5,8 @@
  * target.
  */
 
-#ifndef CUS_INJECTOR_H
-#define CUS_INJECTOR_H
+#ifndef MYL_INJECTOR_H
+#define MYL_INJECTOR_H
 
 #include <jsc/jsc.h>
 
@@ -16,19 +16,20 @@
  * relative to `manifest->dir`. Failures are logged and skipped: one broken
  * file must not stop the remaining scripts from running.
  *
- * Every JS file is wrapped in a function taking one argument, `cog`, which
+ * Every JS file is wrapped in a function taking one argument, `ctx`, which
  * carries this script's settings and nothing else — not the page's, not another
  * script's. That is why it is an argument and not a global: on a foreign page a
  * global would put the domain-block allowlist and the display-lock PIN within
  * reach of every script the page itself loads.
  *
- * `trusted` says whether this page's <meta> tags may configure anything, and is
- * passed on to the script as cog.trusted. The caller determines it with
- * cus_config_origin_trusted().
+ * `trusted` says whether this page's <meta> tags may configure anything. It is
+ * passed to the prelude as its own argument rather than surfacing on `ctx`, so a
+ * script cannot hand it on. The caller determines it with
+ * myl_config_origin_trusted().
  *
- * "shadow_css" files are not injected. They arrive as cog.css for the script to
+ * "shadow_css" files are not injected. They arrive as ctx.css for the script to
  * put in a shadow root itself. */
-void cus_inject(JSCContext *context, const CusManifest *manifest,
-                const CusContentScript *script, bool trusted);
+void myl_inject(JSCContext *context, const MylManifest *manifest,
+                const MylContentScript *script, bool trusted);
 
-#endif /* CUS_INJECTOR_H */
+#endif /* MYL_INJECTOR_H */

@@ -7,7 +7,7 @@
  * framework that caches the previous value would not notice the change.
  *
  * It lives in the page rather than in a shadow root, so a page's CSS can reach it.
- * Recolour it by overriding the --osk-* custom properties.
+ * Recolour it by overriding the --myelin-osk-* custom properties.
  *
  * The letter block follows the physical layouts, not a phone's: ü + ö ä # and , . -
  * where a German keyboard has them, [ ] ; ' and , . / where a US one does. A phone
@@ -29,8 +29,8 @@
  *   skip      regular expressions of hosts to leave alone      ()
  *   theme     light | dark | auto — shared with navbar         auto
  *
- * The page can drive it: window.cogOsk.setLayout("en" | "de" | "numeric") and
- * window.cogOsk.hide().
+ * The page can drive it: window.myelin.osk.setLayout("en" | "de" | "numeric") and
+ * window.myelin.osk.hide().
  */
 
 /* --- standing aside --------------------------------------------------- */
@@ -64,7 +64,7 @@ function skipsHost(host) {
 
 if (skipsHost(location.hostname)) return;
 
-var ELEMENT_ID = "cog-osk";
+var ELEMENT_ID = "myelin-osk";
 var DEFAULT_LAYOUT = ctx.config("layout", "en") === "de" ? "de" : "en";
 
 /* --- layouts ---------------------------------------------------------- */
@@ -111,7 +111,7 @@ var DEFAULT_LAYOUT = ctx.config("layout", "en") === "de" ? "de" : "en";
 // ?123 twice is iOS's too — either hand can reach one without crossing the bar.
 //
 // Not taken from iOS: the globe (there is one letter layout at a time; the host
-// page switches with cogOsk.setLayout) and the microphone (no dictation).
+// page switches with myelin.osk.setLayout) and the microphone (no dictation).
 var LAYOUTS = {
   de: [
     [["Tab", "tab"], "q", "w", "e", "r", "t", "z", "u", "i", "o", "p", "ü", ["+", "+", "*"], ["Del", "backspace"]],
@@ -578,7 +578,7 @@ function render() {
 
   rowsFor(layout).forEach(function (row) {
     var rowEl = document.createElement("div");
-    rowEl.className = "cog-osk-row";
+    rowEl.className = "myelin-osk-row";
 
     row.forEach(function (entry) {
       var key = keyParts(entry);
@@ -589,7 +589,7 @@ function render() {
       var button = document.createElement("div");
 
       button.setAttribute("role", "button");
-      button.className = "cog-osk-key";
+      button.className = "myelin-osk-key";
       button.dataset.action = key.action;
 
       if (key.action === "char") {
@@ -598,14 +598,14 @@ function render() {
         button.textContent = charFor(key.value, key.shift);
       } else {
         button.textContent = key.label;
-        button.classList.add("cog-osk-key-special");
-        // Also one class per action — cog-osk-key-enter, -shift, -dismiss — so
+        button.classList.add("myelin-osk-key-special");
+        // Also one class per action — myelin-osk-key-enter, -shift, -dismiss — so
         // that giving a single key its own width or icon is a CSS rule and not
         // another branch in here.
-        button.classList.add("cog-osk-key-" + key.action);
+        button.classList.add("myelin-osk-key-" + key.action);
       }
 
-      if (key.wide === "space") button.classList.add("cog-osk-key-space");
+      if (key.wide === "space") button.classList.add("myelin-osk-key-space");
 
       // Shift shows the one-shot, Caps shows the lock, and each shows only its
       // own state: one shared indicator makes a locked keyboard look like a
@@ -640,7 +640,7 @@ function render() {
 });
 
 root.addEventListener("click", function (event) {
-  var button = event.target.closest(".cog-osk-key");
+  var button = event.target.closest(".myelin-osk-key");
   if (!button || !target) return;
 
   // Last line of defence: if focus escaped anyway, put it back before
@@ -760,7 +760,7 @@ function show(el) {
   if (appearing) {
     root.classList.add("is-visible");
     window.dispatchEvent(
-      new CustomEvent("cog:keyboard:show", { detail: { layout: layout } })
+      new CustomEvent("myelin:keyboard:show", { detail: { layout: layout } })
     );
   }
 
@@ -781,7 +781,7 @@ function hide() {
   capsLock = false;
   layout = startLayout();
   root.classList.remove("is-visible");
-  window.dispatchEvent(new CustomEvent("cog:keyboard:hide"));
+  window.dispatchEvent(new CustomEvent("myelin:keyboard:hide"));
 }
 
 /* --- watching focus, including inside shadow roots --------------------- */
@@ -905,11 +905,11 @@ onFocus(function (field) {
   hide();
 });
 
-// Expose the layout switch for the host page: cogOsk.setLayout("en"), or
+// Expose the layout switch for the host page: myelin.osk.setLayout("en"), or
 // "numeric" for a field the selector does not catch. hide() is there for an
 // application that needs the panel clear for a moment — a modal, a scan, a
 // confirmation.
-window.cogOsk = {
+window.myelin.osk = {
   setLayout: function (name) {
     if (name === "de" || name === "en") {
       letterLayout = name;

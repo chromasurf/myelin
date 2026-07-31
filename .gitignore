@@ -18,5 +18,5 @@ erl_crash.dump
 /test/c/*.o
 /test/c/run.dSYM/
 
-# Generated from c_src/cog_prelude.js on every build
+# Generated from c_src/prelude.js on every build
 /c_src/generated/

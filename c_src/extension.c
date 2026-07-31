@@ -3,7 +3,7 @@
  *
  * Cog loads every .so in the directory given to --web-extensions-dir and calls
  * webkit_web_process_extension_initialize() in the web process. From there we
- * hook the two moments a userscript can run at:
+ * hook the two moments a script can run at:
  *
  *   document_start  ->  WebKitScriptWorld::window-object-cleared, which fires
  *                       once per frame before any page script runs.
@@ -23,36 +23,36 @@
 #include "log.h"
 #include "manifest.h"
 
-#define CUS_LOG_DOMAIN "cog-userscripts"
+#define MYL_LOG_DOMAIN "myelin"
 
-/* Used when COG_USERSCRIPTS_PATH is unset. That is the kiosk with no application
- * behind it — nobody calling CogUserscripts.cog_env/1 — and since the library
+/* Used when MYELIN_PATH is unset. That is the kiosk with no application
+ * behind it — nobody calling Myelin.browser_env/1 — and since the library
  * contributes no scripts of its own, this is then the whole search path rather
  * than a fallback with a gap in it. */
-#define CUS_DEFAULT_SEARCH_PATH "/data/cog-userscripts"
+#define MYL_DEFAULT_SEARCH_PATH "/data/myelin"
 
-static CusManifestList *s_manifests;
-static CusConfig *s_config;
+static MylManifestList *s_manifests;
+static MylConfig *s_config;
 
 /* ------------------------------------------------------------------ *
  * logging
  * ------------------------------------------------------------------ */
 
-static void forward_to_glib(CusLogLevel level, const char *message, void *user_data)
+static void forward_to_glib(MylLogLevel level, const char *message, void *user_data)
 {
     (void)user_data;
 
-    if (level == CUS_LOG_WARNING)
-        g_log(CUS_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "%s", message);
+    if (level == MYL_LOG_WARNING)
+        g_log(MYL_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "%s", message);
     else
-        g_log(CUS_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s", message);
+        g_log(MYL_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s", message);
 }
 
 /* ------------------------------------------------------------------ *
  * injection
  * ------------------------------------------------------------------ */
 
-/* Reads the content of a cog-enable / cog-disable meta tag, or NULL when the tag
+/* Reads the content of a myelin-enable / myelin-disable meta tag, or NULL when the tag
  * is absent. One evaluation for both, once per pass — which is also cheaper than
  * once per document rather than once per script.
  *
@@ -64,7 +64,7 @@ static void read_switch_tags(JSCContext *context, char **enable, char **disable)
     static const char kReadTags[] =
         "(function () {\n"
         "  var read = function (name) {\n"
-        "    var el = document.querySelector('meta[name=\"cog-' + name + '\"]');\n"
+        "    var el = document.querySelector('meta[name=\"myelin-' + name + '\"]');\n"
         "    return el ? el.content : null;\n"
         "  };\n"
         "  return [read('enable'), read('disable')];\n"
@@ -96,7 +96,7 @@ static void read_switch_tags(JSCContext *context, char **enable, char **disable)
 
 /* Runs every script whose run_at equals `when` and whose patterns match `uri`.
  * `main_frame` drives the all_frames check. */
-static void run_matching(JSCContext *context, const char *uri, CusRunAt when,
+static void run_matching(JSCContext *context, const char *uri, MylRunAt when,
                          gboolean main_frame)
 {
     gboolean trusted;
@@ -106,22 +106,22 @@ static void run_matching(JSCContext *context, const char *uri, CusRunAt when,
     if (!s_manifests || !context || !uri || !*uri)
         return;
 
-    trusted = cus_config_origin_trusted(s_config, uri);
+    trusted = myl_config_origin_trusted(s_config, uri);
 
     /* Not looked at on an untrusted origin, which is the point: a foreign page
-     * cannot switch a script off by claiming cog-disable. It also means no DOM
+     * cannot switch a script off by claiming myelin-disable. It also means no DOM
      * query at all out there. */
     if (trusted)
         read_switch_tags(context, &enable, &disable);
 
     for (size_t m = 0; m < s_manifests->n_items; m++) {
-        const CusManifest *manifest = &s_manifests->items[m];
+        const MylManifest *manifest = &s_manifests->items[m];
 
-        if (!cus_script_enabled(manifest, enable, disable))
+        if (!myl_script_enabled(manifest, enable, disable))
             continue;
 
         for (size_t s = 0; s < manifest->n_scripts; s++) {
-            const CusContentScript *script = &manifest->scripts[s];
+            const MylContentScript *script = &manifest->scripts[s];
 
             if (script->run_at != when)
                 continue;
@@ -129,16 +129,16 @@ static void run_matching(JSCContext *context, const char *uri, CusRunAt when,
             if (!main_frame && !script->all_frames)
                 continue;
 
-            if (!cus_content_script_matches(script, uri))
+            if (!myl_content_script_matches(script, uri))
                 continue;
 
-            cus_inject(context, manifest, script, trusted);
+            myl_inject(context, manifest, script, trusted);
         }
     }
 }
 
 /* Key under which the main frame's JS context is cached on the page. */
-#define CUS_MAIN_CONTEXT_KEY "cog-userscripts-main-context"
+#define MYL_MAIN_CONTEXT_KEY "myelin-main-context"
 
 static void on_window_object_cleared(WebKitScriptWorld *world, WebKitWebPage *page,
                                      WebKitFrame *frame, gpointer user_data)
@@ -158,10 +158,10 @@ static void on_window_object_cleared(WebKitScriptWorld *world, WebKitWebPage *pa
      * but it is deprecated since 2.48 — presumably because with site isolation
      * "the main frame" is no longer well defined inside one web process. */
     if (main_frame && context)
-        g_object_set_data_full(G_OBJECT(page), CUS_MAIN_CONTEXT_KEY,
+        g_object_set_data_full(G_OBJECT(page), MYL_MAIN_CONTEXT_KEY,
                                g_object_ref(context), g_object_unref);
 
-    run_matching(context, uri, CUS_RUN_AT_DOCUMENT_START, main_frame);
+    run_matching(context, uri, MYL_RUN_AT_DOCUMENT_START, main_frame);
 }
 
 /* The cached context, or a last-resort lookup through the deprecated getter in
@@ -169,7 +169,7 @@ static void on_window_object_cleared(WebKitScriptWorld *world, WebKitWebPage *pa
  * context lazily). */
 static JSCContext *main_context_for(WebKitWebPage *page)
 {
-    JSCContext *context = g_object_get_data(G_OBJECT(page), CUS_MAIN_CONTEXT_KEY);
+    JSCContext *context = g_object_get_data(G_OBJECT(page), MYL_MAIN_CONTEXT_KEY);
     WebKitFrame *frame;
 
     if (context)
@@ -187,7 +187,7 @@ static gboolean on_idle(gpointer user_data)
     WebKitWebPage *page = WEBKIT_WEB_PAGE(user_data);
 
     run_matching(main_context_for(page), webkit_web_page_get_uri(page),
-                 CUS_RUN_AT_DOCUMENT_IDLE, TRUE);
+                 MYL_RUN_AT_DOCUMENT_IDLE, TRUE);
 
     return G_SOURCE_REMOVE;
 }
@@ -199,7 +199,7 @@ static void on_document_loaded(WebKitWebPage *page, gpointer user_data)
     /* document-loaded is a per-page signal, so document_end and document_idle
      * only ever see the main frame — all_frames applies to document_start. */
     run_matching(main_context_for(page), webkit_web_page_get_uri(page),
-                 CUS_RUN_AT_DOCUMENT_END, TRUE);
+                 MYL_RUN_AT_DOCUMENT_END, TRUE);
 
     g_idle_add_full(G_PRIORITY_LOW, on_idle, g_object_ref(page), g_object_unref);
 }
@@ -223,49 +223,49 @@ static void on_page_created(WebKitWebProcessExtension *extension, WebKitWebPage 
  * variable is quietly overruling. */
 static void load_config(const char *const *entries, size_t n_entries)
 {
-    const char *env = g_getenv("COG_USERSCRIPTS_CONFIG");
+    const char *env = g_getenv("MYELIN_CONFIG");
 
     if (env) {
-        cus_debug("configuration from COG_USERSCRIPTS_CONFIG");
-        s_config = cus_config_parse(env);
+        myl_debug("configuration from MYELIN_CONFIG");
+        s_config = myl_config_parse(env);
     } else {
-        s_config = cus_config_load_path(entries, n_entries);
+        s_config = myl_config_load_path(entries, n_entries);
     }
 }
 
 static void load_manifests(void)
 {
-    const char *env = g_getenv("COG_USERSCRIPTS_PATH");
-    char **entries = cus_split_search_path(env ? env : CUS_DEFAULT_SEARCH_PATH);
+    const char *env = g_getenv("MYELIN_PATH");
+    char **entries = myl_split_search_path(env ? env : MYL_DEFAULT_SEARCH_PATH);
     size_t n_entries = 0;
 
     if (!entries) {
-        cus_warn("COG_USERSCRIPTS_PATH is empty, no scripts will be loaded");
+        myl_warn("MYELIN_PATH is empty, no scripts will be loaded");
         return;
     }
 
     while (entries[n_entries])
         n_entries++;
 
-    s_manifests = cus_manifest_load_path((const char *const *)entries, n_entries);
+    s_manifests = myl_manifest_load_path((const char *const *)entries, n_entries);
     load_config((const char *const *)entries, n_entries);
-    cus_strv_free(entries);
+    myl_strv_free(entries);
 
     if (!s_manifests || s_manifests->n_items == 0) {
-        cus_warn("no userscripts found in %s — nothing ships with the library, "
+        myl_warn("no scripts found in %s — nothing ships with the library, "
                  "scripts are copied into an application",
-                 env ? env : CUS_DEFAULT_SEARCH_PATH);
+                 env ? env : MYL_DEFAULT_SEARCH_PATH);
         return;
     }
 
     /* Merge the device settings into every manifest once, so nothing has to be
      * worked out per injection. */
-    cus_config_apply(s_config, s_manifests);
+    myl_config_apply(s_config, s_manifests);
 
     for (size_t i = 0; i < s_manifests->n_items; i++) {
-        const CusManifest *m = &s_manifests->items[i];
+        const MylManifest *m = &s_manifests->items[i];
 
-        cus_debug("loaded \"%s\" (%s) with %zu content script(s) from %s", m->name,
+        myl_debug("loaded \"%s\" (%s) with %zu content script(s) from %s", m->name,
                   m->id, m->n_scripts, m->dir);
     }
 }
@@ -273,8 +273,8 @@ static void load_manifests(void)
 G_MODULE_EXPORT void
 webkit_web_process_extension_initialize(WebKitWebProcessExtension *extension)
 {
-    cus_log_set_handler(forward_to_glib, NULL);
-    cus_debug("initialising (set G_MESSAGES_DEBUG=" CUS_LOG_DOMAIN " for details)");
+    myl_log_set_handler(forward_to_glib, NULL);
+    myl_debug("initialising (set G_MESSAGES_DEBUG=" MYL_LOG_DOMAIN " for details)");
 
     load_manifests();
 

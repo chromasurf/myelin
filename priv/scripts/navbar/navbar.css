@@ -1,7 +1,7 @@
 /*
  * navbar.css — two things about this file before the rules.
  *
- * 1. Every selector is anchored on #cog-navbar. An ID beats any class rule the
+ * 1. Every selector is anchored on #myelin-navbar. An ID beats any class rule the
  *    visited page has, and that is the whole defence available without a shadow
  *    root. The four !important below are for declarations pages set globally
  *    rather than per element: box-sizing through *, the focus outline through
@@ -27,7 +27,7 @@
  */
 
 @font-face {
-  font-family: CogMono;
+  font-family: MyelinMono;
   font-style: normal;
   font-weight: 400;
   font-display: swap;
@@ -35,7 +35,7 @@
 }
 
 @font-face {
-  font-family: CogMono;
+  font-family: MyelinMono;
   font-style: normal;
   font-weight: 600;
   font-display: swap;
@@ -51,10 +51,10 @@
    translucent, and `span { float: right }` tore the hairlines out of the row —
    neither needed !important to do it. domain-block hit the same wall in a shadow
    root. transform is deliberately not in here: the icons are built from it. */
-#cog-navbar,
-#cog-navbar *,
-#cog-navbar *::before,
-#cog-navbar *::after {
+#myelin-navbar,
+#myelin-navbar *,
+#myelin-navbar *::before,
+#myelin-navbar *::after {
   box-sizing: border-box !important;
   float: none !important;
   opacity: 1 !important;
@@ -65,15 +65,15 @@
   min-height: 0;
 }
 
-#cog-navbar {
-  --cog-nav-bg: #14171a;
-  --cog-nav-fg: #e8ecee;
-  --cog-nav-dim: #7d8a91;
-  --cog-nav-line: #2a3035;
-  --cog-nav-accent: #42a7c6;
-  --cog-nav-field: #0d1013;
-  --cog-nav-press: rgba(232, 236, 238, 0.1);
-  --cog-nav-font: CogMono, "Liberation Mono", "DejaVu Sans Mono", monospace;
+#myelin-navbar {
+  --myelin-nav-bg: #14171a;
+  --myelin-nav-fg: #e8ecee;
+  --myelin-nav-dim: #7d8a91;
+  --myelin-nav-line: #2a3035;
+  --myelin-nav-accent: #42a7c6;
+  --myelin-nav-field: #0d1013;
+  --myelin-nav-press: rgba(232, 236, 238, 0.1);
+  --myelin-nav-font: MyelinMono, "Liberation Mono", "DejaVu Sans Mono", monospace;
 
   /* A layout reset in the page can move a fixed element or bury it. */
   position: fixed !important;
@@ -84,20 +84,20 @@
   display: flex;
   align-items: center;
   gap: 0;
-  height: var(--cog-nav-h, 48px);
+  height: var(--myelin-nav-h, 48px);
   margin: 0;
   padding: 0 4px;
 
-  background: var(--cog-nav-bg);
-  border-bottom: 1px solid var(--cog-nav-line);
+  background: var(--myelin-nav-bg);
+  border-bottom: 1px solid var(--myelin-nav-line);
   box-shadow: none;
 
-  font-family: var(--cog-nav-font);
+  font-family: var(--myelin-nav-font);
   font-size: 13px;
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0;
-  color: var(--cog-nav-fg);
+  color: var(--myelin-nav-fg);
   text-align: left;
   text-transform: none;
 
@@ -108,45 +108,45 @@
   transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), height 180ms ease-out;
 }
 
-#cog-navbar.is-in {
+#myelin-navbar.is-in {
   transform: translateY(0);
 }
 
 /* Light: the default follows the panel, an explicit theme wins over it. */
 @media (prefers-color-scheme: light) {
-  #cog-navbar:not(.cog-nav-dark) {
-    --cog-nav-bg: #f1f4f5;
-    --cog-nav-fg: #14171a;
-    --cog-nav-dim: #6a757b;
-    --cog-nav-line: #d2d8db;
-    --cog-nav-field: #ffffff;
-    --cog-nav-press: rgba(20, 23, 26, 0.08);
+  #myelin-navbar:not(.myelin-nav-dark) {
+    --myelin-nav-bg: #f1f4f5;
+    --myelin-nav-fg: #14171a;
+    --myelin-nav-dim: #6a757b;
+    --myelin-nav-line: #d2d8db;
+    --myelin-nav-field: #ffffff;
+    --myelin-nav-press: rgba(20, 23, 26, 0.08);
   }
 }
 
-#cog-navbar.cog-nav-light {
-  --cog-nav-bg: #f1f4f5;
-  --cog-nav-fg: #14171a;
-  --cog-nav-dim: #6a757b;
-  --cog-nav-line: #d2d8db;
-  --cog-nav-field: #ffffff;
-  --cog-nav-press: rgba(20, 23, 26, 0.08);
+#myelin-navbar.myelin-nav-light {
+  --myelin-nav-bg: #f1f4f5;
+  --myelin-nav-fg: #14171a;
+  --myelin-nav-dim: #6a757b;
+  --myelin-nav-line: #d2d8db;
+  --myelin-nav-field: #ffffff;
+  --myelin-nav-press: rgba(20, 23, 26, 0.08);
 }
 
 /* `*:focus { outline: none }` is in almost every stylesheet, and a kiosk whose
    focus is invisible cannot be operated. */
-#cog-navbar :focus-visible {
-  outline: 2px solid var(--cog-nav-accent) !important;
+#myelin-navbar :focus-visible {
+  outline: 2px solid var(--myelin-nav-accent) !important;
   outline-offset: -2px !important;
 }
 
 /* --- buttons ------------------------------------------------------------- */
 
-#cog-navbar .cog-nav-btn {
+#myelin-navbar .myelin-nav-btn {
   position: relative;
   flex: 0 0 auto;
-  width: calc(var(--cog-nav-h, 48px) - 4px);
-  height: calc(var(--cog-nav-h, 48px) - 4px);
+  width: calc(var(--myelin-nav-h, 48px) - 4px);
+  height: calc(var(--myelin-nav-h, 48px) - 4px);
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -154,7 +154,7 @@
   border: 0;
   border-radius: 3px;
   background: transparent;
-  color: var(--cog-nav-fg);
+  color: var(--myelin-nav-fg);
 
   font: inherit;
   cursor: pointer;
@@ -165,8 +165,8 @@
   transition: background-color 120ms ease-out, color 120ms ease-out;
 }
 
-#cog-navbar .cog-nav-btn:active {
-  background: var(--cog-nav-press);
+#myelin-navbar .myelin-nav-btn:active {
+  background: var(--myelin-nav-press);
 }
 
 /* Every icon is drawn. The kiosk images ship Liberation, which has no glyph for
@@ -174,7 +174,7 @@
    instead of pictographs. Geometry needs no font at all. */
 
 /* Home: a roof over a body. */
-#cog-navbar .cog-nav-home::before {
+#myelin-navbar .myelin-nav-home::before {
   content: "";
   position: absolute;
   left: 50%;
@@ -185,7 +185,7 @@
   border-bottom: 8px solid currentColor;
 }
 
-#cog-navbar .cog-nav-home::after {
+#myelin-navbar .myelin-nav-home::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -198,7 +198,7 @@
 }
 
 /* Reload: a ring with a quarter missing, and an arrowhead where it ends. */
-#cog-navbar .cog-nav-reload::before {
+#myelin-navbar .myelin-nav-reload::before {
   content: "";
   position: absolute;
   left: 50%;
@@ -213,7 +213,7 @@
   transition: transform 320ms ease-out;
 }
 
-#cog-navbar .cog-nav-reload::after {
+#myelin-navbar .myelin-nav-reload::after {
   content: "";
   position: absolute;
   left: calc(50% + 3px);
@@ -224,12 +224,12 @@
   transform: rotate(105deg);
 }
 
-#cog-navbar .cog-nav-reload:active::before {
+#myelin-navbar .myelin-nav-reload:active::before {
   transform: rotate(405deg);
 }
 
 /* Go: a chevron from two borders. */
-#cog-navbar .cog-nav-go::before {
+#myelin-navbar .myelin-nav-go::before {
   content: "";
   position: absolute;
   left: 50%;
@@ -244,7 +244,7 @@
 
 /* --- the address field --------------------------------------------------- */
 
-#cog-navbar .cog-nav-sep {
+#myelin-navbar .myelin-nav-sep {
   flex: 0 0 auto;
   display: block;
   width: 1px;
@@ -252,25 +252,25 @@
   margin: 0 4px;
   padding: 0;
   border: 0;
-  background: var(--cog-nav-line);
+  background: var(--myelin-nav-line);
 }
 
 /* Pages restyle inputs harder than anything else — appearance, radius, font and
    margin all come back explicitly. */
-#cog-navbar .cog-nav-url {
+#myelin-navbar .myelin-nav-url {
   flex: 1 1 auto;
   min-width: 0;
-  height: calc(var(--cog-nav-h, 48px) - 18px);
+  height: calc(var(--myelin-nav-h, 48px) - 18px);
   margin: 0 2px !important;
   padding: 0 9px;
 
-  border: 1px solid var(--cog-nav-line);
+  border: 1px solid var(--myelin-nav-line);
   border-radius: 3px;
-  background: var(--cog-nav-field);
-  color: var(--cog-nav-fg);
+  background: var(--myelin-nav-field);
+  color: var(--myelin-nav-fg);
   box-shadow: none;
 
-  font-family: var(--cog-nav-font) !important;
+  font-family: var(--myelin-nav-font) !important;
   font-size: 13px;
   font-weight: 400;
   line-height: normal;
@@ -285,18 +285,18 @@
   transition: border-color 120ms ease-out;
 }
 
-#cog-navbar .cog-nav-url:focus {
-  border-color: var(--cog-nav-accent);
+#myelin-navbar .myelin-nav-url:focus {
+  border-color: var(--myelin-nav-accent);
 }
 
-#cog-navbar .cog-nav-url::placeholder {
-  color: var(--cog-nav-dim);
+#myelin-navbar .myelin-nav-url::placeholder {
+  color: var(--myelin-nav-dim);
   opacity: 1;
 }
 
 /* --- collapsed ----------------------------------------------------------- */
 
-#cog-navbar .cog-nav-collar {
+#myelin-navbar .myelin-nav-collar {
   display: none;
   position: absolute;
   inset: 0;
@@ -309,23 +309,23 @@
   appearance: none;
 }
 
-#cog-navbar.is-collapsed {
-  height: var(--cog-nav-collapsed, 6px);
+#myelin-navbar.is-collapsed {
+  height: var(--myelin-nav-collapsed, 6px);
   padding: 0;
   border-bottom-color: transparent;
 }
 
-#cog-navbar.is-collapsed > *:not(.cog-nav-collar) {
+#myelin-navbar.is-collapsed > *:not(.myelin-nav-collar) {
   display: none;
 }
 
-#cog-navbar.is-collapsed .cog-nav-collar {
+#myelin-navbar.is-collapsed .myelin-nav-collar {
   display: block;
 }
 
 /* The one mark left when the bar is away: enough to aim a finger at, not enough
    to be furniture. */
-#cog-navbar.is-collapsed .cog-nav-collar::before {
+#myelin-navbar.is-collapsed .myelin-nav-collar::before {
   content: "";
   position: absolute;
   left: 50%;
@@ -334,12 +334,12 @@
   width: 64px;
   height: 2px;
   border-radius: 1px;
-  background: var(--cog-nav-accent);
+  background: var(--myelin-nav-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #cog-navbar,
-  #cog-navbar * {
+  #myelin-navbar,
+  #myelin-navbar * {
     transition-duration: 1ms !important;
   }
 }

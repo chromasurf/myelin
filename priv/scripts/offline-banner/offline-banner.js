@@ -23,7 +23,7 @@ var PROBE = ctx.config("probe", "");
 var PROBE_MS = ctx.config("every", 15) * 1000;
 
 var banner = document.createElement("div");
-banner.id = "cog-offline-banner";
+banner.id = "myelin-offline-banner";
 document.body.appendChild(banner);
 
 banner.setAttribute("role", "status");
@@ -32,7 +32,7 @@ banner.textContent = ctx.config("text", "No connection");
 // Sit below a status bar if one is present. The bar announces its height when
 // it is ready; without one the offset stays 0.
 function offsetBelow(height) {
-  banner.style.setProperty("--cog-offline-offset", (height || 0) + "px");
+  banner.style.setProperty("--myelin-offline-offset", (height || 0) + "px");
 }
 
 ctx.on("statusbar:ready", function (event) {
@@ -41,7 +41,7 @@ ctx.on("statusbar:ready", function (event) {
 
 // Injection order decides whether that event has already fired, and that
 // order is just alphabetical — so also look for a bar that is already there.
-["cog-statusbar", "cog-statusbar-lv"].forEach(function (elementId) {
+["myelin-statusbar", "myelin-statusbar-lv"].forEach(function (elementId) {
   var bar = document.getElementById(elementId);
   if (bar) offsetBelow(bar.offsetHeight);
 });

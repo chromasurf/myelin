@@ -8,26 +8,26 @@
  * display from growing keys nobody can span.
  *
  * Colours come from custom properties so the light and dark variants differ in
- * one block each. keyboard.js sets data-theme from <meta name="cog-theme">,
- * falling back to prefers-color-scheme. Override the --osk-* values from the page
+ * one block each. keyboard.js sets data-theme from <meta name="myelin-theme">,
+ * falling back to prefers-color-scheme. Override the --myelin-osk-* values from the page
  * if the palette below is not yours.
  *
  * data-shape is the letters/keypad switch: same bar, same place, narrower keys.
  */
 
-#cog-osk {
-  --osk-bg: rgba(28, 31, 33, 0.97);
-  --osk-key: #3c4145;
-  --osk-key-active: #5a6165;
-  --osk-key-special: #2a2e31;
-  --osk-key-special-active: #454b4f;
-  --osk-text: #f2f5f6;
-  --osk-accent: #4b7fb5;
-  --osk-shadow: rgba(0, 0, 0, 0.3);
+#myelin-osk {
+  --myelin-osk-bg: rgba(28, 31, 33, 0.97);
+  --myelin-osk-key: #3c4145;
+  --myelin-osk-key-active: #5a6165;
+  --myelin-osk-key-special: #2a2e31;
+  --myelin-osk-key-special-active: #454b4f;
+  --myelin-osk-text: #f2f5f6;
+  --myelin-osk-accent: #4b7fb5;
+  --myelin-osk-shadow: rgba(0, 0, 0, 0.3);
 
   /* One gap for rows and keys alike, so a row never reads as tighter than the
      keys inside it. */
-  --osk-gap: clamp(4px, min(0.9vw, 0.8vh), 8px);
+  --myelin-osk-gap: clamp(4px, min(0.9vw, 0.8vh), 8px);
 
   position: fixed;
   left: 0;
@@ -45,12 +45,12 @@
 
   display: flex;
   flex-direction: column;
-  gap: var(--osk-gap);
-  padding: var(--osk-gap) calc(var(--osk-gap) * 0.75)
-    calc(var(--osk-gap) + 2px + env(safe-area-inset-bottom, 0px));
+  gap: var(--myelin-osk-gap);
+  padding: var(--myelin-osk-gap) calc(var(--myelin-osk-gap) * 0.75)
+    calc(var(--myelin-osk-gap) + 2px + env(safe-area-inset-bottom, 0px));
 
-  background: var(--osk-bg);
-  box-shadow: 0 -4px 24px var(--osk-shadow);
+  background: var(--myelin-osk-bg);
+  box-shadow: 0 -4px 24px var(--myelin-osk-shadow);
 
   font-family: system-ui, -apple-system, "Liberation Sans", sans-serif;
   user-select: none;
@@ -65,28 +65,28 @@
    accent. This is a default, not a constraint — every colour is a custom
    property, so a copy of this script can be recoloured by overriding the six
    below and nothing else. */
-#cog-osk[data-theme="light"] {
-  --osk-bg: rgba(245, 244, 240, 0.98);
-  --osk-key: #fbf8f3;
-  --osk-key-active: #d8d7d2;
-  --osk-key-special: #ecebe6;
-  --osk-key-special-active: #b8b7b2;
-  --osk-text: #111111;
-  --osk-accent: #ff3300;
-  --osk-shadow: rgba(17, 17, 17, 0.14);
+#myelin-osk[data-theme="light"] {
+  --myelin-osk-bg: rgba(245, 244, 240, 0.98);
+  --myelin-osk-key: #fbf8f3;
+  --myelin-osk-key-active: #d8d7d2;
+  --myelin-osk-key-special: #ecebe6;
+  --myelin-osk-key-special-active: #b8b7b2;
+  --myelin-osk-text: #111111;
+  --myelin-osk-accent: #ff3300;
+  --myelin-osk-shadow: rgba(17, 17, 17, 0.14);
 }
 
-#cog-osk.is-visible {
+#myelin-osk.is-visible {
   transform: translateY(0);
 }
 
-.cog-osk-row {
+.myelin-osk-row {
   display: flex;
-  gap: var(--osk-gap);
+  gap: var(--myelin-osk-gap);
   justify-content: center;
 }
 
-.cog-osk-key {
+.myelin-osk-key {
   flex: 1 1 0;
   min-width: 0;
   min-height: clamp(40px, min(7.5vw, 6.5vh), 64px);
@@ -99,8 +99,8 @@
   justify-content: center;
 
   border-radius: 8px;
-  background: var(--osk-key);
-  color: var(--osk-text);
+  background: var(--myelin-osk-key);
+  color: var(--myelin-osk-text);
 
   font-family: inherit;
   font-size: clamp(16px, min(2.9vw, 2.4vh), 24px);
@@ -111,40 +111,40 @@
   cursor: default;
 }
 
-#cog-osk[data-theme="light"] .cog-osk-key {
+#myelin-osk[data-theme="light"] .myelin-osk-key {
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
 }
 
-.cog-osk-key:active {
-  background: var(--osk-key-active);
+.myelin-osk-key:active {
+  background: var(--myelin-osk-key-active);
 }
 
 /* Word labels rather than ⇧ ⌫ ⏎ — the kiosk images ship Liberation, which has no
    glyphs for those — so these need to fit "Shift" where a character key holds one
    letter. */
-.cog-osk-key-special {
-  background: var(--osk-key-special);
+.myelin-osk-key-special {
+  background: var(--myelin-osk-key-special);
   font-size: clamp(13px, min(2.3vw, 1.9vh), 19px);
 }
 
-.cog-osk-key-special:active {
-  background: var(--osk-key-special-active);
+.myelin-osk-key-special:active {
+  background: var(--myelin-osk-key-special-active);
 }
 
-.cog-osk-key-special.is-active {
-  background: var(--osk-accent);
+.myelin-osk-key-special.is-active {
+  background: var(--myelin-osk-accent);
   color: #fff;
 }
 
 /* Caps lock: same accent, plus an underline so the two states are told apart
    at a glance rather than by shade alone. */
-.cog-osk-key-special.is-locked {
+.myelin-osk-key-special.is-locked {
   box-shadow: inset 0 -4px 0 rgba(255, 255, 255, 0.65);
 }
 
 /* Wider now that the caret keys are gone: the space bar is the one key hit
    without looking, and the two arrows used to take a third of it. */
-.cog-osk-key-space {
+.myelin-osk-key-space {
   flex: 6 1 0;
 }
 
@@ -156,14 +156,14 @@
 
    Wider than a letter for the same reason a real keyboard makes them wider: these
    are hit without looking, and a miss costs more than a mistyped letter. */
-.cog-osk-key-tab,
-.cog-osk-key-caps,
-.cog-osk-key-backspace {
+.myelin-osk-key-tab,
+.myelin-osk-key-caps,
+.myelin-osk-key-backspace {
   flex: 1.5 1 0;
 }
 
-.cog-osk-key-enter,
-.cog-osk-key-shift {
+.myelin-osk-key-enter,
+.myelin-osk-key-shift {
   flex: 2 1 0;
 }
 
@@ -171,12 +171,12 @@
    ship Liberation, which has no glyph for ⌨, and a word would have to be picked in
    one language. A chevron pointing down at the edge the keyboard slides out to —
    the keyboard outline iOS draws around it turned to mud at this size. */
-.cog-osk-key-dismiss {
+.myelin-osk-key-dismiss {
   flex: 0 0 auto;
   min-width: clamp(48px, min(9vw, 8vh), 76px);
 }
 
-.cog-osk-key-dismiss::before {
+.myelin-osk-key-dismiss::before {
   content: "";
   width: clamp(9px, min(1.5vw, 1.3vh), 14px);
   height: clamp(9px, min(1.5vw, 1.3vh), 14px);
@@ -194,24 +194,24 @@
    where the keyboard went when the field changes. Only the block of keys narrows
    — three digits stretched across 800px is a worse target than three within
    reach of one thumb. */
-#cog-osk[data-shape="keypad"] .cog-osk-row {
+#myelin-osk[data-shape="keypad"] .myelin-osk-row {
   width: 100%;
   max-width: min(420px, 62vw);
   margin: 0 auto;
 }
 
 /* Digits of even width, so 111 and 999 do not shift the caret about. */
-#cog-osk[data-shape="keypad"] .cog-osk-key {
+#myelin-osk[data-shape="keypad"] .myelin-osk-key {
   font-variant-numeric: tabular-nums;
 }
 
 /* Give the browser room to scroll a focused field clear of the keyboard. */
-html:has(#cog-osk.is-visible) {
+html:has(#myelin-osk.is-visible) {
   scroll-padding-bottom: 40vh;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #cog-osk {
+  #myelin-osk {
     transition-duration: 1ms;
   }
 }

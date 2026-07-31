@@ -57,7 +57,7 @@ static void strv_free_n(char **strv, size_t n)
     free(strv);
 }
 
-void cus_strv_free(char **strv)
+void myl_strv_free(char **strv)
 {
     if (!strv)
         return;
@@ -68,7 +68,7 @@ void cus_strv_free(char **strv)
     free(strv);
 }
 
-bool cus_relative_path_ok(const char *name)
+bool myl_relative_path_ok(const char *name)
 {
     const char *segment = name;
 
@@ -107,7 +107,7 @@ static char **parse_string_array(const char *json, const jsmntok_t *tokens, int 
     *count_out = 0;
 
     if (tokens[index].type != JSMN_ARRAY) {
-        cus_warn("%s: expected an array, ignoring", context);
+        myl_warn("%s: expected an array, ignoring", context);
         return NULL;
     }
 
@@ -120,14 +120,14 @@ static char **parse_string_array(const char *json, const jsmntok_t *tokens, int 
 
     for (int k = 0; k < n; k++) {
         if (tokens[i].type == JSMN_STRING) {
-            char *value = cus_json_dup(json, &tokens[i]);
+            char *value = myl_json_dup(json, &tokens[i]);
 
             if (value)
                 out[written++] = value;
         } else {
-            cus_warn("%s: entry %d is not a string, ignoring", context, k);
+            myl_warn("%s: entry %d is not a string, ignoring", context, k);
         }
-        i = cus_json_skip(tokens, i);
+        i = myl_json_skip(tokens, i);
     }
 
     if (written == 0) {
@@ -155,12 +155,12 @@ static char **parse_file_array(const char *json, const jsmntok_t *tokens, int in
         return NULL;
 
     for (size_t i = 0; i < n; i++) {
-        if (cus_relative_path_ok(out[i])) {
+        if (myl_relative_path_ok(out[i])) {
             out[kept++] = out[i];
             continue;
         }
 
-        cus_warn("%s: file name \"%s\" must stay inside the script directory, ignoring",
+        myl_warn("%s: file name \"%s\" must stay inside the script directory, ignoring",
                  context, out[i]);
         free(out[i]);
     }
@@ -174,13 +174,13 @@ static char **parse_file_array(const char *json, const jsmntok_t *tokens, int in
     return out;
 }
 
-static CusMatchPattern *parse_pattern_array(const char *json, const jsmntok_t *tokens,
+static MylMatchPattern *parse_pattern_array(const char *json, const jsmntok_t *tokens,
                                             int index, size_t *count_out,
                                             const char *context)
 {
     size_t n_strings = 0;
     char **strings = parse_string_array(json, tokens, index, &n_strings, context);
-    CusMatchPattern *out;
+    MylMatchPattern *out;
     size_t written = 0;
 
     *count_out = 0;
@@ -195,10 +195,10 @@ static CusMatchPattern *parse_pattern_array(const char *json, const jsmntok_t *t
     }
 
     for (size_t i = 0; i < n_strings; i++) {
-        if (cus_match_pattern_parse(strings[i], &out[written]))
+        if (myl_match_pattern_parse(strings[i], &out[written]))
             written++;
         else
-            cus_warn("%s: malformed match pattern \"%s\", ignoring", context, strings[i]);
+            myl_warn("%s: malformed match pattern \"%s\", ignoring", context, strings[i]);
     }
 
     strv_free_n(strings, n_strings);
@@ -216,14 +216,14 @@ static CusMatchPattern *parse_pattern_array(const char *json, const jsmntok_t *t
  * content_scripts
  * ------------------------------------------------------------------ */
 
-static void content_script_clear(CusContentScript *script)
+static void content_script_clear(MylContentScript *script)
 {
     for (size_t i = 0; i < script->n_matches; i++)
-        cus_match_pattern_clear(&script->matches[i]);
+        myl_match_pattern_clear(&script->matches[i]);
     free(script->matches);
 
     for (size_t i = 0; i < script->n_excludes; i++)
-        cus_match_pattern_clear(&script->excludes[i]);
+        myl_match_pattern_clear(&script->excludes[i]);
     free(script->excludes);
 
     strv_free_n(script->js, script->n_js);
@@ -232,18 +232,18 @@ static void content_script_clear(CusContentScript *script)
     memset(script, 0, sizeof(*script));
 }
 
-static bool parse_run_at(const char *value, CusRunAt *out, const char *context)
+static bool parse_run_at(const char *value, MylRunAt *out, const char *context)
 {
     if (strcmp(value, "document_start") == 0)
-        *out = CUS_RUN_AT_DOCUMENT_START;
+        *out = MYL_RUN_AT_DOCUMENT_START;
     else if (strcmp(value, "document_end") == 0)
-        *out = CUS_RUN_AT_DOCUMENT_END;
+        *out = MYL_RUN_AT_DOCUMENT_END;
     else if (strcmp(value, "document_idle") == 0)
-        *out = CUS_RUN_AT_DOCUMENT_IDLE;
+        *out = MYL_RUN_AT_DOCUMENT_IDLE;
     else {
-        cus_warn("%s: unknown run_at \"%s\", falling back to document_end", context,
+        myl_warn("%s: unknown run_at \"%s\", falling back to document_end", context,
                  value);
-        *out = CUS_RUN_AT_DOCUMENT_END;
+        *out = MYL_RUN_AT_DOCUMENT_END;
         return false;
     }
 
@@ -252,17 +252,17 @@ static bool parse_run_at(const char *value, CusRunAt *out, const char *context)
 
 /* Parses one content_scripts entry. Returns the index just past it. */
 static int parse_content_script(const char *json, const jsmntok_t *tokens, int index,
-                                CusContentScript *script, const char *id)
+                                MylContentScript *script, const char *id)
 {
     int n_keys;
     int i;
 
     memset(script, 0, sizeof(*script));
-    script->run_at = CUS_RUN_AT_DOCUMENT_END;
+    script->run_at = MYL_RUN_AT_DOCUMENT_END;
 
     if (tokens[index].type != JSMN_OBJECT) {
-        cus_warn("%s: content_scripts entry is not an object, ignoring", id);
-        return cus_json_skip(tokens, index);
+        myl_warn("%s: content_scripts entry is not an object, ignoring", id);
+        return myl_json_skip(tokens, index);
     }
 
     n_keys = tokens[index].size;
@@ -272,49 +272,49 @@ static int parse_content_script(const char *json, const jsmntok_t *tokens, int i
         const jsmntok_t *key = &tokens[i];
         int value = i + 1;
 
-        if (cus_json_eq(json, key, "matches")) {
+        if (myl_json_eq(json, key, "matches")) {
             script->matches =
                 parse_pattern_array(json, tokens, value, &script->n_matches, id);
-        } else if (cus_json_eq(json, key, "exclude_matches")) {
+        } else if (myl_json_eq(json, key, "exclude_matches")) {
             script->excludes =
                 parse_pattern_array(json, tokens, value, &script->n_excludes, id);
-        } else if (cus_json_eq(json, key, "js")) {
+        } else if (myl_json_eq(json, key, "js")) {
             script->js = parse_file_array(json, tokens, value, &script->n_js, id);
-        } else if (cus_json_eq(json, key, "css")) {
+        } else if (myl_json_eq(json, key, "css")) {
             script->css = parse_file_array(json, tokens, value, &script->n_css, id);
-        } else if (cus_json_eq(json, key, "shadow_css")) {
+        } else if (myl_json_eq(json, key, "shadow_css")) {
             script->shadow_css =
                 parse_file_array(json, tokens, value, &script->n_shadow_css, id);
-        } else if (cus_json_eq(json, key, "run_at")) {
+        } else if (myl_json_eq(json, key, "run_at")) {
             if (tokens[value].type == JSMN_STRING) {
-                char *text = cus_json_dup(json, &tokens[value]);
+                char *text = myl_json_dup(json, &tokens[value]);
 
                 if (text) {
                     parse_run_at(text, &script->run_at, id);
                     free(text);
                 }
             } else {
-                cus_warn("%s: run_at is not a string, using document_end", id);
+                myl_warn("%s: run_at is not a string, using document_end", id);
             }
-        } else if (cus_json_eq(json, key, "all_frames")) {
-            script->all_frames = cus_json_is_true(json, &tokens[value]);
+        } else if (myl_json_eq(json, key, "all_frames")) {
+            script->all_frames = myl_json_is_true(json, &tokens[value]);
         } else {
-            char *name = cus_json_dup(json, key);
+            char *name = myl_json_dup(json, key);
 
-            cus_warn("%s: content_scripts key \"%s\" is not supported, ignoring",
+            myl_warn("%s: content_scripts key \"%s\" is not supported, ignoring",
                      id, name ? name : "?");
             free(name);
         }
 
-        i = cus_json_skip(tokens, value);
+        i = myl_json_skip(tokens, value);
     }
 
     if (script->n_matches == 0)
-        cus_warn("%s: content_scripts entry has no usable \"matches\", it will never run",
+        myl_warn("%s: content_scripts entry has no usable \"matches\", it will never run",
                  id);
 
     if (script->n_js == 0 && script->n_css == 0 && script->n_shadow_css == 0)
-        cus_warn("%s: content_scripts entry lists neither \"js\" nor \"css\"", id);
+        myl_warn("%s: content_scripts entry lists neither \"js\" nor \"css\"", id);
 
     return i;
 }
@@ -326,19 +326,19 @@ static int parse_content_script(const char *json, const jsmntok_t *tokens, int i
 /* Takes the raw text of the "config" object, braces included. It is not parsed
  * into a structure — the contents belong to the script — but it does end up
  * inside JS source, so it must be an object and it must survive
- * cus_json_slice_ok(), which is stricter about primitives than jsmn is. */
+ * myl_json_slice_ok(), which is stricter about primitives than jsmn is. */
 static char *parse_config_slice(const char *json, const jsmntok_t *tokens, int index,
                                 const char *id)
 {
     const jsmntok_t *tok = &tokens[index];
 
     if (tok->type != JSMN_OBJECT) {
-        cus_warn("%s: \"config\" must be an object, ignoring", id);
+        myl_warn("%s: \"config\" must be an object, ignoring", id);
         return NULL;
     }
 
-    if (!cus_json_slice_ok(json, tokens, index)) {
-        cus_warn("%s: \"config\" is not JSON that can be passed on verbatim, ignoring",
+    if (!myl_json_slice_ok(json, tokens, index)) {
+        myl_warn("%s: \"config\" is not JSON that can be passed on verbatim, ignoring",
                  id);
         return NULL;
     }
@@ -347,9 +347,9 @@ static char *parse_config_slice(const char *json, const jsmntok_t *tokens, int i
 }
 
 /* Frees everything a manifest owns, but not the manifest itself: the list holds
- * them by value while cus_manifest_free() holds one by pointer. In one place, so a
+ * them by value while myl_manifest_free() holds one by pointer. In one place, so a
  * new field is only forgotten once. */
-static void manifest_clear(CusManifest *manifest)
+static void manifest_clear(MylManifest *manifest)
 {
     for (size_t i = 0; i < manifest->n_scripts; i++)
         content_script_clear(&manifest->scripts[i]);
@@ -361,7 +361,7 @@ static void manifest_clear(CusManifest *manifest)
     free(manifest->config);
 }
 
-void cus_manifest_free(CusManifest *manifest)
+void myl_manifest_free(MylManifest *manifest)
 {
     if (!manifest)
         return;
@@ -370,12 +370,12 @@ void cus_manifest_free(CusManifest *manifest)
     free(manifest);
 }
 
-CusManifest *cus_manifest_parse(const char *json, size_t len, const char *id,
+MylManifest *myl_manifest_parse(const char *json, size_t len, const char *id,
                                 const char *dir)
 {
     jsmn_parser parser;
     jsmntok_t *tokens = NULL;
-    CusManifest *manifest = NULL;
+    MylManifest *manifest = NULL;
     int n_tokens;
     int n_keys;
     int i;
@@ -384,12 +384,12 @@ CusManifest *cus_manifest_parse(const char *json, size_t len, const char *id,
     n_tokens = jsmn_parse(&parser, json, len, NULL, 0);
 
     if (n_tokens < 0) {
-        cus_warn("%s: manifest.json is not valid JSON (jsmn error %d)", id, n_tokens);
+        myl_warn("%s: manifest.json is not valid JSON (jsmn error %d)", id, n_tokens);
         return NULL;
     }
 
     if (n_tokens == 0) {
-        cus_warn("%s: manifest.json is empty", id);
+        myl_warn("%s: manifest.json is empty", id);
         return NULL;
     }
 
@@ -399,13 +399,13 @@ CusManifest *cus_manifest_parse(const char *json, size_t len, const char *id,
 
     jsmn_init(&parser);
     if (jsmn_parse(&parser, json, len, tokens, (unsigned int)n_tokens) < 0) {
-        cus_warn("%s: manifest.json is not valid JSON", id);
+        myl_warn("%s: manifest.json is not valid JSON", id);
         free(tokens);
         return NULL;
     }
 
     if (tokens[0].type != JSMN_OBJECT) {
-        cus_warn("%s: manifest.json must contain an object at the top level", id);
+        myl_warn("%s: manifest.json must contain an object at the top level", id);
         free(tokens);
         return NULL;
     }
@@ -433,19 +433,19 @@ CusManifest *cus_manifest_parse(const char *json, size_t len, const char *id,
         const jsmntok_t *key = &tokens[i];
         int value = i + 1;
 
-        if (cus_json_eq(json, key, "name")) {
+        if (myl_json_eq(json, key, "name")) {
             free(manifest->name);
-            manifest->name = cus_json_dup(json, &tokens[value]);
-        } else if (cus_json_eq(json, key, "enabled")) {
-            manifest->enabled = !cus_json_is_false(json, &tokens[value]);
-        } else if (cus_json_eq(json, key, "config")) {
+            manifest->name = myl_json_dup(json, &tokens[value]);
+        } else if (myl_json_eq(json, key, "enabled")) {
+            manifest->enabled = !myl_json_is_false(json, &tokens[value]);
+        } else if (myl_json_eq(json, key, "config")) {
             free(manifest->config);
             manifest->config = parse_config_slice(json, tokens, value, id);
-        } else if (cus_json_eq(json, key, "content_scripts")) {
+        } else if (myl_json_eq(json, key, "content_scripts")) {
             int n_entries = tokens[value].size;
 
             if (tokens[value].type != JSMN_ARRAY) {
-                cus_warn("%s: content_scripts must be an array", id);
+                myl_warn("%s: content_scripts must be an array", id);
             } else if (n_entries > 0) {
                 int entry = value + 1;
 
@@ -470,19 +470,19 @@ CusManifest *cus_manifest_parse(const char *json, size_t len, const char *id,
                     manifest->n_scripts++;
                 }
             }
-        } else if (cus_json_eq(json, key, "manifest_version") ||
-                   cus_json_eq(json, key, "version") ||
-                   cus_json_eq(json, key, "description")) {
+        } else if (myl_json_eq(json, key, "manifest_version") ||
+                   myl_json_eq(json, key, "version") ||
+                   myl_json_eq(json, key, "description")) {
             /* Accepted and ignored: informational only. */
         } else {
-            char *name = cus_json_dup(json, key);
+            char *name = myl_json_dup(json, key);
 
-            cus_warn("%s: manifest key \"%s\" is not supported, ignoring", id,
+            myl_warn("%s: manifest key \"%s\" is not supported, ignoring", id,
                      name ? name : "?");
             free(name);
         }
 
-        i = cus_json_skip(tokens, value);
+        i = myl_json_skip(tokens, value);
     }
 
     if (!manifest->name)
@@ -493,18 +493,18 @@ CusManifest *cus_manifest_parse(const char *json, size_t len, const char *id,
 
 fail:
     free(tokens);
-    cus_manifest_free(manifest);
+    myl_manifest_free(manifest);
     return NULL;
 }
 
-CusManifest *cus_manifest_load_dir(const char *dir, const char *id)
+MylManifest *myl_manifest_load_dir(const char *dir, const char *id)
 {
     char *path = join_path(dir, "manifest.json");
     FILE *file;
     long size;
     char *buffer;
     size_t read_bytes;
-    CusManifest *manifest;
+    MylManifest *manifest;
 
     if (!path)
         return NULL;
@@ -517,14 +517,14 @@ CusManifest *cus_manifest_load_dir(const char *dir, const char *id)
 
     if (fseek(file, 0, SEEK_END) != 0 || (size = ftell(file)) < 0 ||
         fseek(file, 0, SEEK_SET) != 0) {
-        cus_warn("%s: cannot determine the size of %s", id, path);
+        myl_warn("%s: cannot determine the size of %s", id, path);
         fclose(file);
         free(path);
         return NULL;
     }
 
     if (size > MAX_MANIFEST_BYTES) {
-        cus_warn("%s: manifest.json is larger than %d bytes, refusing to read", id,
+        myl_warn("%s: manifest.json is larger than %d bytes, refusing to read", id,
                  MAX_MANIFEST_BYTES);
         fclose(file);
         free(path);
@@ -542,7 +542,7 @@ CusManifest *cus_manifest_load_dir(const char *dir, const char *id)
     fclose(file);
     buffer[read_bytes] = '\0';
 
-    manifest = cus_manifest_parse(buffer, read_bytes, id, dir);
+    manifest = myl_manifest_parse(buffer, read_bytes, id, dir);
 
     free(buffer);
     free(path);
@@ -553,7 +553,7 @@ CusManifest *cus_manifest_load_dir(const char *dir, const char *id)
  * search path
  * ------------------------------------------------------------------ */
 
-char **cus_split_search_path(const char *value)
+char **myl_split_search_path(const char *value)
 {
     size_t count = 1;
     char **out;
@@ -579,7 +579,7 @@ char **cus_split_search_path(const char *value)
         if (len > 0) {
             out[written] = dup_range(cursor, len);
             if (!out[written]) {
-                cus_strv_free(out);
+                myl_strv_free(out);
                 return NULL;
             }
             written++;
@@ -591,7 +591,7 @@ char **cus_split_search_path(const char *value)
     }
 
     if (written == 0) {
-        cus_strv_free(out);
+        myl_strv_free(out);
         return NULL;
     }
 
@@ -664,7 +664,7 @@ static char **list_subdirectories(const char *dir, size_t *count_out)
     return names;
 }
 
-static int find_manifest(const CusManifestList *list, const char *id)
+static int find_manifest(const MylManifestList *list, const char *id)
 {
     for (size_t i = 0; i < list->n_items; i++) {
         if (strcmp(list->items[i].id, id) == 0)
@@ -674,7 +674,7 @@ static int find_manifest(const CusManifestList *list, const char *id)
     return -1;
 }
 
-void cus_manifest_list_free(CusManifestList *list)
+void myl_manifest_list_free(MylManifestList *list)
 {
     if (!list)
         return;
@@ -686,10 +686,10 @@ void cus_manifest_list_free(CusManifestList *list)
     free(list);
 }
 
-CusManifestList *cus_manifest_load_path(const char *const *search_path,
+MylManifestList *myl_manifest_load_path(const char *const *search_path,
                                         size_t n_entries)
 {
-    CusManifestList *list = calloc(1, sizeof(*list));
+    MylManifestList *list = calloc(1, sizeof(*list));
     size_t capacity = 0;
 
     if (!list)
@@ -700,19 +700,19 @@ CusManifestList *cus_manifest_load_path(const char *const *search_path,
         char **names = list_subdirectories(search_path[e], &n_names);
 
         if (!names) {
-            cus_debug("no scripts in %s", search_path[e]);
+            myl_debug("no scripts in %s", search_path[e]);
             continue;
         }
 
         for (size_t n = 0; n < n_names; n++) {
             char *dir = join_path(search_path[e], names[n]);
-            CusManifest *manifest;
+            MylManifest *manifest;
             int existing;
 
             if (!dir)
                 continue;
 
-            manifest = cus_manifest_load_dir(dir, names[n]);
+            manifest = myl_manifest_load_dir(dir, names[n]);
             free(dir);
 
             if (!manifest)
@@ -722,9 +722,9 @@ CusManifestList *cus_manifest_load_path(const char *const *search_path,
 
             if (existing >= 0) {
                 /* Later search-path entries win outright. */
-                CusManifest *slot = &list->items[existing];
+                MylManifest *slot = &list->items[existing];
 
-                cus_debug("%s: overridden by %s", slot->id, manifest->dir);
+                myl_debug("%s: overridden by %s", slot->id, manifest->dir);
 
                 manifest_clear(slot);
                 *slot = *manifest;
@@ -734,10 +734,10 @@ CusManifestList *cus_manifest_load_path(const char *const *search_path,
 
             if (list->n_items == capacity) {
                 size_t next = capacity ? capacity * 2 : 8;
-                CusManifest *grown = realloc(list->items, next * sizeof(*grown));
+                MylManifest *grown = realloc(list->items, next * sizeof(*grown));
 
                 if (!grown) {
-                    cus_manifest_free(manifest);
+                    myl_manifest_free(manifest);
                     break;
                 }
 
@@ -754,11 +754,11 @@ CusManifestList *cus_manifest_load_path(const char *const *search_path,
 
     /* "enabled": false does not drop a manifest here. It is a default state, and
      * the device configuration or a trusted page can override it — so the decision
-     * belongs per page, in cus_script_enabled(), not to this scan. */
+     * belongs per page, in myl_script_enabled(), not to this scan. */
     return list;
 }
 
-bool cus_content_script_matches(const CusContentScript *script, const char *url)
+bool myl_content_script_matches(const MylContentScript *script, const char *url)
 {
     bool included = false;
 
@@ -766,7 +766,7 @@ bool cus_content_script_matches(const CusContentScript *script, const char *url)
         return false;
 
     for (size_t i = 0; i < script->n_matches; i++) {
-        if (cus_match_pattern_matches(&script->matches[i], url)) {
+        if (myl_match_pattern_matches(&script->matches[i], url)) {
             included = true;
             break;
         }
@@ -776,7 +776,7 @@ bool cus_content_script_matches(const CusContentScript *script, const char *url)
         return false;
 
     for (size_t i = 0; i < script->n_excludes; i++) {
-        if (cus_match_pattern_matches(&script->excludes[i], url))
+        if (myl_match_pattern_matches(&script->excludes[i], url))
             return false;
     }
 
