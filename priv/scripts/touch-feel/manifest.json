@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Touch Feel",
+  "version": "1.0",
+  "description": "The physics a finger expects from a tablet: rubber-band overscroll, pull-to-refresh, and edge swipes for back and forward.",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["touch-feel.js"],
+      "css": ["touch-feel.css"],
+      "run_at": "document_end"
+    }
+  ]
+}
