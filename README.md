@@ -66,8 +66,11 @@ config :myelin,
 
 That is the whole install. The scripts ship inside the library, in
 `Myelin.bundled_dir/0`, and that directory is on the search path already —
-but **every one of them is dormant until you name it**. A kiosk that configures
-nothing gets no scripts.
+but **every one of them is dormant until you set `enabled: true`**. No bundled
+manifest carries an `enabled` key, and a manifest without one is off, so the
+device configuration is what switches a script on. Settings alone do not: a
+script named under `scripts` without `enabled: true` is configured and never
+runs. A kiosk that configures nothing gets no scripts.
 
 On `MIX_TARGET=host` the native build is skipped and `browser_args/0` returns `[]`, so a
 host build stays green.
@@ -148,7 +151,7 @@ Create the directory first over an IEx session if it is not there
 Device-wide, in your application's config. This is the layer that always applies:
 
 ```elixir
-# config/runtime.exs
+# config/runtime.exs, or config/target.exs in a Nerves project
 config :myelin,
   trusted_origins: ["http://localhost:4000"],
   scripts: %{
