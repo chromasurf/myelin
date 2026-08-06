@@ -13,6 +13,8 @@
  *   bg      any CSS colour                             #000
  *   speed   px per second                              70
  *   color   nerves | cycle | any CSS colour            cycle
+ *   image   URL of an image to bounce instead of the
+ *           Nerves logo; it falls back if it fails      ()
  *
  * Events
  *   emits    screensaver:show, screensaver:hide
@@ -24,6 +26,7 @@
 var MODE = ctx.config("mode", "both");
 var COLOR = ctx.config("color", "cycle");
 var SPEED = ctx.config("speed", 70);
+var IMAGE = ctx.config("image", "");
 var IDLE_MS = ctx.config("idle", 120) * 1000;
 
 var SHOW_LOGO = MODE === "logo" || MODE === "both";
@@ -79,7 +82,22 @@ if (SHOW_CLOCK) {
 if (SHOW_LOGO) {
   logo = document.createElement("div");
   logo.className = "myelin-screensaver-logo";
-  logo.innerHTML = NERVES_SVG;
+
+  if (IMAGE) {
+    var img = document.createElement("img");
+    img.alt = "";
+    // An image that does not load must not leave an invisible rectangle
+    // drifting around — fall back to the logo that is always there. That also
+    // covers a relative path on a page it does not resolve against.
+    img.addEventListener("error", function () {
+      logo.innerHTML = NERVES_SVG;
+    });
+    img.src = IMAGE;
+    logo.appendChild(img);
+  } else {
+    logo.innerHTML = NERVES_SVG;
+  }
+
   if (COLOR !== "nerves" && COLOR !== "cycle") logo.style.color = COLOR;
   overlay.appendChild(logo);
 }

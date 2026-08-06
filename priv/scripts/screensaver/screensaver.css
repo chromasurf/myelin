@@ -67,7 +67,8 @@
   transition: filter 240ms linear;
 }
 
-.myelin-screensaver-logo svg {
+.myelin-screensaver-logo svg,
+.myelin-screensaver-logo img {
   display: block;
   width: 100%;
   height: auto;
