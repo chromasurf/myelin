@@ -84,7 +84,7 @@
   display: flex;
   align-items: center;
   gap: 0;
-  height: var(--myelin-nav-h, 48px);
+  height: var(--myelin-nav-h, 56px);
   margin: 0;
   padding: 0 4px;
 
@@ -93,7 +93,7 @@
   box-shadow: none;
 
   font-family: var(--myelin-nav-font);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0;
@@ -145,8 +145,11 @@
 #myelin-navbar .myelin-nav-btn {
   position: relative;
   flex: 0 0 auto;
-  width: calc(var(--myelin-nav-h, 48px) - 4px);
-  height: calc(var(--myelin-nav-h, 48px) - 4px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--myelin-nav-h, 56px) - 4px);
+  height: calc(var(--myelin-nav-h, 56px) - 4px);
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -169,77 +172,29 @@
   background: var(--myelin-nav-press);
 }
 
-/* Every icon is drawn. The kiosk images ship Liberation, which has no glyph for
-   ⌂ ⟳ ▸ — they would render as tofu boxes, which is why keyboard writes words
-   instead of pictographs. Geometry needs no font at all. */
-
-/* Home: a roof over a body. */
-#myelin-navbar .myelin-nav-home::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: calc(50% - 8px);
-  transform: translateX(-50%);
-  border-left: 9px solid transparent;
-  border-right: 9px solid transparent;
-  border-bottom: 8px solid currentColor;
+/* The icons are inline SVG from navbar.js — the kiosk images ship Liberation,
+   which has no glyph for ⌂ ⟳ ▸, and data: fonts die on a strict CSP. Sized
+   from the bar's height so the whole control scales as one. */
+#myelin-navbar .myelin-nav-btn svg {
+  display: block;
+  width: calc(var(--myelin-nav-h, 56px) * 0.4);
+  height: calc(var(--myelin-nav-h, 56px) * 0.4);
 }
 
-#myelin-navbar .myelin-nav-home::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translateX(-50%);
-  width: 12px;
-  height: 8px;
-  border: 2px solid currentColor;
-  border-top: 0;
+#myelin-navbar .myelin-nav-btn svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-/* Reload: a ring with a quarter missing, and an arrowhead where it ends. */
-#myelin-navbar .myelin-nav-reload::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  border: 2px solid currentColor;
-  border-top-color: transparent;
-  border-radius: 50%;
-  transform: rotate(45deg);
+#myelin-navbar .myelin-nav-reload svg {
   transition: transform 320ms ease-out;
 }
 
-#myelin-navbar .myelin-nav-reload::after {
-  content: "";
-  position: absolute;
-  left: calc(50% + 3px);
-  top: calc(50% - 11px);
-  border-left: 3px solid transparent;
-  border-right: 3px solid transparent;
-  border-bottom: 5px solid currentColor;
-  transform: rotate(105deg);
-}
-
-#myelin-navbar .myelin-nav-reload:active::before {
-  transform: rotate(405deg);
-}
-
-/* Go: a chevron from two borders. */
-#myelin-navbar .myelin-nav-go::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 9px;
-  height: 9px;
-  border: 2px solid currentColor;
-  border-left: 0;
-  border-bottom: 0;
-  transform: translate(-65%, -50%) rotate(45deg);
+#myelin-navbar .myelin-nav-reload:active svg {
+  transform: rotate(360deg);
 }
 
 /* --- the address field --------------------------------------------------- */
@@ -255,14 +210,24 @@
   background: var(--myelin-nav-line);
 }
 
+/* Field and clear button share this wrapper, so the button can sit inside the
+   field's right edge while the row's flex layout sees one item. */
+#myelin-navbar .myelin-nav-urlwrap {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
 /* Pages restyle inputs harder than anything else — appearance, radius, font and
    margin all come back explicitly. */
 #myelin-navbar .myelin-nav-url {
   flex: 1 1 auto;
   min-width: 0;
-  height: calc(var(--myelin-nav-h, 48px) - 18px);
+  height: calc(var(--myelin-nav-h, 56px) - 18px);
   margin: 0 2px !important;
-  padding: 0 9px;
+  padding: 0 calc(var(--myelin-nav-h, 56px) * 0.7) 0 9px;
 
   border: 1px solid var(--myelin-nav-line);
   border-radius: 3px;
@@ -271,7 +236,7 @@
   box-shadow: none;
 
   font-family: var(--myelin-nav-font) !important;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   line-height: normal;
   letter-spacing: 0;
@@ -292,6 +257,27 @@
 #myelin-navbar .myelin-nav-url::placeholder {
   color: var(--myelin-nav-dim);
   opacity: 1;
+}
+
+/* Inside the field's right edge, dimmer than the real buttons: it clears a
+   value, it does not navigate. Hidden while there is nothing to clear. */
+#myelin-navbar .myelin-nav-clear {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(var(--myelin-nav-h, 56px) * 0.55);
+  height: calc(var(--myelin-nav-h, 56px) * 0.55);
+  color: var(--myelin-nav-dim);
+}
+
+#myelin-navbar .myelin-nav-clear svg {
+  width: calc(var(--myelin-nav-h, 56px) * 0.28);
+  height: calc(var(--myelin-nav-h, 56px) * 0.28);
+}
+
+#myelin-navbar .myelin-nav-clear.is-hidden {
+  display: none;
 }
 
 /* --- collapsed ----------------------------------------------------------- */
