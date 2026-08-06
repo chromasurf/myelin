@@ -212,7 +212,7 @@ defmodule MyelinTest do
     test "every manifest is valid JSON with content_scripts" do
       manifests = manifest_paths()
 
-      assert length(manifests) == 13
+      assert length(manifests) == 14
 
       manifests
       |> Enum.each(fn path ->

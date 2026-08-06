@@ -17,7 +17,7 @@
  * Beta.
  *
  * Configuration
- *   height     px, tap targets scale with it              48
+ *   height     px, tap targets scale with it              56
  *   items      which controls, in order: home reload url go   home reload url go
  *   home       where home goes                            /
  *   accent     any CSS colour                             ()
@@ -32,7 +32,7 @@
 
 var KNOWN = ["home", "reload", "url", "go"];
 var COLLAPSED = 6;
-var HEIGHT = ctx.config("height", 48);
+var HEIGHT = ctx.config("height", 56);
 var ITEMS = ctx.config("items", ["home", "reload", "url", "go"]);
 var HOME = ctx.config("home", "/");
 var ACCENT = ctx.config("accent", "");
@@ -79,11 +79,33 @@ if (THEME === "light" || THEME === "dark") {
   bar.className = "myelin-nav-" + THEME;
 }
 
+// Inline SVG rather than glyphs or border tricks: the kiosk images ship
+// Liberation, which has no ⌂ ⟳ ▸ — and geometry built from borders bends as
+// soon as a page's reset reaches into transform. currentColor keeps the theme
+// in charge; the stroke styling lives in one CSS rule.
+var ICONS = {
+  home:
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M3.5 11.5 12 4l8.5 7.5" />' +
+    '<path d="M6 10.5V20h4.5v-5.5h3V20H18v-9.5" /></svg>',
+  reload:
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M20 12a8 8 0 1 1-2.34-5.66" />' +
+    '<path d="M20 3.5v5h-5" /></svg>',
+  go:
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M5 12h13" /><path d="M12 6l6 6-6 6" /></svg>',
+  clear:
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M7 7l10 10" /><path d="M17 7 7 17" /></svg>'
+};
+
 function button(name, label) {
   var el = document.createElement("button");
   el.type = "button";
   el.className = "myelin-nav-btn myelin-nav-" + name;
   el.setAttribute("aria-label", label);
+  el.innerHTML = ICONS[name] || "";
 
   // Without this, tapping a button moves focus out of the address field first;
   // the field's own blur handling would then run before the click and Go would
@@ -103,6 +125,12 @@ function separator() {
 }
 
 var field = null;
+var clear = null;
+
+// The clear button only earns its place while there is something to clear.
+function syncClear() {
+  if (clear && field) clear.classList.toggle("is-hidden", !field.value);
+}
 
 function addItem(name) {
   if (name === "home") {
@@ -126,6 +154,11 @@ function addItem(name) {
   if (name === "url") {
     bar.appendChild(separator());
 
+    // Field and clear button share a wrapper, so the button can sit inside the
+    // field's right edge without leaving the flex row.
+    var wrap = document.createElement("div");
+    wrap.className = "myelin-nav-urlwrap";
+
     field = document.createElement("input");
     field.type = "url";
     field.className = "myelin-nav-url";
@@ -142,6 +175,8 @@ function addItem(name) {
       field.select();
     });
 
+    field.addEventListener("input", syncClear);
+
     field.addEventListener("keydown", function (event) {
       if (event.key === "Enter") {
         event.preventDefault();
@@ -152,11 +187,24 @@ function addItem(name) {
       if (event.key === "Escape") {
         event.preventDefault();
         field.value = location.href;
+        syncClear();
         field.blur();
       }
     });
 
-    bar.appendChild(field);
+    // The pointerdown guard in button() keeps the field's focus through the
+    // tap, so clearing leaves the keyboard up and the caret in the empty field.
+    clear = button("clear", "Clear the address");
+    clear.addEventListener("click", function () {
+      field.value = "";
+      syncClear();
+      field.focus();
+    });
+
+    wrap.appendChild(field);
+    wrap.appendChild(clear);
+    bar.appendChild(wrap);
+    syncClear();
     return;
   }
 
@@ -217,11 +265,20 @@ window.requestAnimationFrame(function () {
 var shown = location.href;
 
 window.setInterval(function () {
+  // A page that rebuilds its body takes the bar with it — put it back. The
+  // padding goes with the re-attach, because whatever replaced the body has
+  // usually reset the root's inline style too.
+  if (!bar.isConnected) {
+    document.body.appendChild(bar);
+    setCollapsed(collapsed);
+  }
+
   if (!field || document.activeElement === field) return;
   if (location.href === shown) return;
 
   shown = location.href;
   field.value = shown;
+  syncClear();
 }, 1000);
 
 ctx.on("navbar:toggle", function () {

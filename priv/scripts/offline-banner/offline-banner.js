@@ -55,7 +55,13 @@ function setOffline(offline) {
 
 function probe() {
   // cache: no-store, so a cached response cannot fake reachability.
-  fetch(PROBE, { method: "HEAD", cache: "no-store" })
+  //
+  // mode: no-cors, because the probe is almost always a foreign origin and
+  // CORS would reject every response it has no headers for — making "the
+  // server answered" indistinguishable from "the cable is out". An opaque
+  // response resolves, a network failure rejects, and that is the whole
+  // question this banner asks.
+  fetch(PROBE, { method: "HEAD", cache: "no-store", mode: "no-cors" })
     .then(function () {
       setOffline(false);
     })
