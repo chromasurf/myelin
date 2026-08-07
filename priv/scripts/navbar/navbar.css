@@ -172,6 +172,14 @@
   background: var(--myelin-nav-press);
 }
 
+/* Back on the first page of a session, forward before anything has been left
+   behind: dimmed rather than hidden, so the bar does not reshuffle under a
+   finger that is already on its way to a button. */
+#myelin-navbar .myelin-nav-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 /* The icons are inline SVG from navbar.js — the kiosk images ship Liberation,
    which has no glyph for ⌂ ⟳ ▸, and data: fonts die on a strict CSP. Sized
    from the bar's height so the whole control scales as one. */
