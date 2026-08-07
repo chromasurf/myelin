@@ -1,7 +1,12 @@
 /*
  * Debug Overlay — diagnostics for when you are standing in front of the panel
  * rather than at a laptop with the remote inspector open. Three quick taps into
- * the top-right corner show and hide it.
+ * the **bottom-left** corner show and hide it.
+ *
+ * Bottom-left rather than a top corner, because the top edge is spoken for: a bar
+ * (`navbar`, `statusbar`) lives there, and `tap-to-top` answers a tap on the very
+ * top edge by scrolling the page up. A diagnostics gesture that fights three other
+ * things for the same pixels is a diagnostics gesture nobody can use.
  *
  * Shows URL, viewport, FPS, JS heap where WebKit exposes it, the scripts that
  * registered themselves, and the last few JS errors. That last part is the reason
@@ -147,7 +152,7 @@ function setVisible(next) {
 }
 
 window.addEventListener("pointerdown", function (event) {
-  if (event.clientX < window.innerWidth - CORNER_PX || event.clientY > CORNER_PX) {
+  if (event.clientX > CORNER_PX || event.clientY < window.innerHeight - CORNER_PX) {
     taps = [];
     return;
   }
