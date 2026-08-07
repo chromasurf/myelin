@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Tap to Top",
+  "version": "1.0",
+  "description": "Tap the top edge of the screen to scroll the page back up.",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["tap-to-top.js"],
+      "run_at": "document_end"
+    }
+  ]
+}

@@ -84,7 +84,7 @@ by that.
 
 | Directory | What it is |
 |---|---|
-| `priv/scripts` inside this library | the eight that ship. On the search path automatically. |
+| `priv/scripts` inside this library | the seven that ship. On the search path automatically. |
 | `priv/myelin` of your application | what you wrote, and what you copied to change |
 | `/data/myelin` | for iterating on a device without a firmware build |
 
@@ -100,21 +100,21 @@ Myelin.browser_env(extra: [Application.app_dir(:my_app, "priv/myelin")])
 
 `:my_app` there is your own application's OTP name — the `:app` in your `mix.exs`.
 
-### The eight that ship
+### The seven that ship
 
-Two are stable. The other six work and are maintained, but their shape may still
+Two are stable. The other five work and are maintained, but their shape may still
 change, so they say **Beta** in their own header.
 
 | Script | | What it does |
 |---|---|---|
 | `keyboard` | stable | Touch keyboard in two variants: the **physical** US ANSI (default) and German T1 letter layouts — punctuation on the letter block, real Shift pairs, `ß` — or a keypad when the field is numeric. Optional number row, two symbol levels, caps lock, light/dark, key sizes from the viewport. No caret keys. Writes through the native value setter so LiveView sees the change. |
 | `screensaver` | stable | After a while without input, the Nerves logo drifts across a dark screen and bounces off the edges. Optional clock. Any input wakes it, and the tap that wakes it is swallowed whole — both the `pointerdown` and the `click` after it, or waking on top of a link would follow the link. |
-| `kiosk-guard` | beta | Removes the affordances that only cause trouble on a wall panel: context menu, selection, drag and drop, pinch zoom, and the cursor when nobody moves it. Text fields stay selectable. |
 | `statusbar` | beta | A fixed strip across the top: clock, URL, connection state. No network, no assets, so it works on any page. |
-| `navbar` | beta | A browser bar for a kiosk: home, reload, address. Claims the top edge, as `statusbar` does — run one. |
+| `navbar` | beta | A browser bar for a kiosk: back, forward, home, reload, address. Back and forward walk a trail kept in `window.name` rather than the browser's history — see the script's header for why. Claims the top edge, as `statusbar` does — run one. |
 | `offline-banner` | beta | Says so when the connection drops. `navigator.onLine` only reports whether a link exists, so an optional probe URL answers the real question. |
 | `domain-block` | beta | Covers a page that is not on an allowlist, with a way back. **Not a network filter** — see below. |
-| `debug-overlay` | beta | URL, viewport, FPS, JS heap, which scripts ran, and the last few JS errors. Three taps top-right. That last part is why it exists: an exception in a script is otherwise invisible. |
+| `debug-overlay` | beta | URL, viewport, FPS, JS heap, which scripts ran, and the last few JS errors. Three taps into the bottom-left corner. That last part is why it exists: an exception in a script is otherwise invisible. |
+| `tap-to-top` | beta | Tap the very top edge and the page scrolls back up, on a spring. What is left of a larger touch-physics script — see below. |
 
 `ideas/` holds five more that **do not ship** — a PIN lock, a LiveView status bar, a
 confetti gesture and two others. They are there to be read and reworked; see
@@ -350,6 +350,29 @@ A page cannot claim trust it was not given, so it cannot switch a script off wit
 `myelin-disable`, and it cannot configure one with a meta tag. That property has its own
 test.
 
+## Where an overlay belongs
+
+**A script's overlay is a child of `<body>`,** like everything else on the page:
+
+```js
+document.body.appendChild(bar);
+```
+
+`document.documentElement` looks like the tidier choice when something must not be
+affected by a transform on `<body>` — and on WPE it is wrong. **A fixed element
+parented to `<html>` is not held steady while the document scrolls.** It lags the
+scroll by a frame and visibly jumps, measured on a reTerminal DM with a corner badge
+that had been rock solid as a body child. Giving it its own compositing layer
+(`will-change: transform`) does not help either; on that panel the reserved layer
+made the whole screen flicker while scrolling.
+
+If you push the document down to make room for a bar, that goes on the root element's
+padding, as `statusbar` does:
+
+```js
+document.documentElement.style.paddingTop = HEIGHT + "px";
+```
+
 ## Shadow roots
 
 If your script draws something on pages you do not control, put it in a shadow root.
@@ -395,7 +418,7 @@ in `priv/scripts/domain-block/domain-block.css`, above the rules it explains.
 `@font-face` has to be in the outer document, so a script with a shadow root needs a
 second stylesheet under `css` for it.
 
-Of the eight that ship, only `domain-block` uses a shadow root. The keyboard
+Of the seven that ship, only `domain-block` uses a shadow root. The keyboard
 deliberately does not: it lives in the page, so a page can recolour it through the
 `--myelin-osk-*` custom properties and drive it through `window.myelin.osk`. The cost is that a
 page's CSS can interfere with it.
