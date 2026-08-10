@@ -53,6 +53,9 @@ function setOffline(offline) {
   ctx.emit(offline ? "offline" : "online");
 }
 
+// Half the interval, so a probe is always finished before the next one starts.
+var PROBE_TIMEOUT_MS = Math.max(2000, Math.round(PROBE_MS / 2));
+
 function probe() {
   // cache: no-store, so a cached response cannot fake reachability.
   //
@@ -61,11 +64,30 @@ function probe() {
   // server answered" indistinguishable from "the cable is out". An opaque
   // response resolves, a network failure rejects, and that is the whole
   // question this banner asks.
-  fetch(PROBE, { method: "HEAD", cache: "no-store", mode: "no-cors" })
+  //
+  // The abort is what makes it recover. Without it a probe sent into an
+  // unplugged cable hangs until TCP gives up, which is minutes — and the
+  // interval keeps starting more. Six of those and WebKit's per-host connection
+  // limit is full, so the probe that would finally succeed never leaves: the
+  // banner stays up long after the cable is back. Every probe now gives up well
+  // before the next one starts, and nothing accumulates.
+  var abort = new AbortController();
+  var giveUp = window.setTimeout(function () {
+    abort.abort();
+  }, PROBE_TIMEOUT_MS);
+
+  fetch(PROBE, {
+    method: "HEAD",
+    cache: "no-store",
+    mode: "no-cors",
+    signal: abort.signal
+  })
     .then(function () {
+      window.clearTimeout(giveUp);
       setOffline(false);
     })
     .catch(function () {
+      window.clearTimeout(giveUp);
       setOffline(true);
     });
 }

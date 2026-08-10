@@ -1,25 +1,41 @@
 /*
- * Navbar — a browser bar for a kiosk: home, reload and the address.
+ * Navbar — a browser bar for a kiosk: back, forward, home, reload and the address.
  *
- * No back and forward: this bar cannot keep a history of its own, because
- * sessionStorage is per origin and gone the moment the host changes. And no menu
- * button: a launcher or a tile grid is a full-screen view, and anything built that
- * way can listen for its own event while this stays a bar.
+ * No menu button: a launcher or a tile grid is a full-screen view, and anything
+ * built that way can listen for its own event while this stays a bar.
+ *
+ * **Back and forward do not use the browser's history, and that is deliberate.**
+ * Two reasons, both learned the hard way. On this Cog/WPE stack a history
+ * navigation leaves the panel showing the old page's last frame while the web
+ * process has moved on — the compositor stops getting frames and the terminal
+ * looks frozen; a plain location load repaints reliably. And a bar cannot keep a
+ * history of its own in sessionStorage, which is per origin and gone the moment
+ * the host changes.
+ *
+ * So it keeps its own trail of visited URLs in `window.name`, the one string that
+ * survives a cross-origin navigation, and walks it with `location.href`. WebKit
+ * wipes `window.name` at an origin boundary, so a fresh trail plants
+ * `document.referrer` as its first entry — the way back across that boundary is
+ * the referrer's origin, which is what the policy leaves of it. The cost:
+ * `window.name` belongs to this script while it runs, forward never crosses an
+ * origin boundary, every step is a real load, and the browser's own history grows
+ * instead of unwinding.
  *
  * It claims the top edge by pushing the document down, and so does statusbar.
  * Neither knows about the other, so whichever is injected second wins the padding.
  * Run one.
  *
- * It also takes both top corners, which is where debug-overlay's three-tap gesture
- * lives — a tap at 20,20 presses a button here instead of counting. Move such a
- * gesture to a bottom corner while this bar runs.
+ * It also takes both top corners, so a corner gesture belonging to another script
+ * has to live at the bottom while this bar runs — a tap at 20,20 presses a button
+ * here instead of counting. `debug-overlay` already uses the bottom-left corner
+ * for exactly that reason.
  *
  * Beta.
  *
  * Configuration
  *   height     px, tap targets scale with it              56
- *   items      which controls, in order: home reload url go   home reload url go
- *   home       where home goes                            /
+ *   items      which controls, in order                   back forward home reload url go
+ *   home       where home goes — an absolute URL          /
  *   accent     any CSS colour                             ()
  *   autohide   start collapsed                            false
  *   font       "system" drops the bundled font            ()
@@ -27,13 +43,18 @@
  *
  * Events
  *   emits    navbar:ready — carries the height
+ *   emits    navbar:back {to}, navbar:forward {to} — just before navigating
  *   listens  navbar:toggle
  */
 
-var KNOWN = ["home", "reload", "url", "go"];
+var KNOWN = ["back", "forward", "home", "reload", "url", "go"];
 var COLLAPSED = 6;
 var HEIGHT = ctx.config("height", 56);
-var ITEMS = ctx.config("items", ["home", "reload", "url", "go"]);
+var ITEMS = ctx.config("items", ["back", "forward", "home", "reload", "url", "go"]);
+// "/" is only right for a kiosk that never leaves its own application. The
+// moment one visits a foreign page, "/" is *that site's* front page — so the
+// button meant to bring someone back takes them further into wherever they got
+// lost. Configure an absolute URL on any kiosk that browses.
 var HOME = ctx.config("home", "/");
 var ACCENT = ctx.config("accent", "");
 var AUTOHIDE = ctx.config("autohide", false);
@@ -46,6 +67,107 @@ bar.id = "myelin-navbar";
 
 function go(url) {
   if (url) location.href = url;
+}
+
+/* --- the trail back and forward walk ------------------------------------ */
+
+// window.name, because it is the one string that survives navigation across
+// origins. The invariant: the trail's top is always the current page — each page
+// records itself when this script starts, never on the way out (a write during
+// pagehide is lost in the very navigation it tries to describe). `myelinAhead` is
+// what going back left behind, for forward to walk again; any ordinary
+// navigation discards it, the way every browser does.
+function readTrail() {
+  try {
+    var parsed = JSON.parse(window.name);
+
+    if (parsed && Array.isArray(parsed.myelinTrail)) {
+      if (!Array.isArray(parsed.myelinAhead)) parsed.myelinAhead = [];
+      return parsed;
+    }
+  } catch (ignore) {
+    /* someone else's window.name — start fresh */
+  }
+
+  return { myelinTrail: [], myelinAhead: [] };
+}
+
+function writeTrail(state) {
+  window.name = JSON.stringify(state);
+}
+
+var arrival = readTrail();
+var arrivalTrail = arrival.myelinTrail;
+
+// The trail dies at every origin boundary: WebKit wipes window.name on a
+// cross-origin navigation. The referrer still names where we came from — origin
+// only, by policy, but that is exactly the step back — so a fresh trail gets it
+// planted underneath. From there the same-origin part of the journey accumulates
+// on top as usual.
+if (
+  arrivalTrail.length === 0 &&
+  document.referrer &&
+  document.referrer.indexOf(location.origin) !== 0
+) {
+  arrivalTrail.push(document.referrer);
+}
+
+if (arrivalTrail[arrivalTrail.length - 1] !== location.href) {
+  // An ordinary navigation: record it and drop the forward stack.
+  arrivalTrail.push(location.href);
+  if (arrivalTrail.length > 50) arrivalTrail.shift();
+  arrival.myelinAhead = [];
+  writeTrail(arrival);
+}
+
+function goBack() {
+  var state = readTrail();
+  var trail = state.myelinTrail;
+
+  // trail[last] is this page; the step back is the last *other* entry.
+  while (trail.length > 0 && trail[trail.length - 1] === location.href) {
+    state.myelinAhead.push(trail.pop());
+  }
+
+  var target = trail[trail.length - 1];
+  if (!target) return;
+
+  writeTrail(state);
+  ctx.emit("navbar:back", { to: target });
+  go(target);
+}
+
+function goForward() {
+  var state = readTrail();
+  var target = null;
+
+  while (state.myelinAhead.length > 0 && !target) {
+    var candidate = state.myelinAhead.pop();
+    if (candidate !== location.href) target = candidate;
+  }
+
+  if (!target) return;
+
+  state.myelinTrail.push(target);
+  writeTrail(state);
+  ctx.emit("navbar:forward", { to: target });
+  go(target);
+}
+
+// Nothing to go back to on the first page of a session, and nothing forward
+// until something has been left behind. A button that cannot do anything says so
+// rather than looking broken when tapped.
+function syncHistoryButtons() {
+  var state = readTrail();
+  var trail = state.myelinTrail;
+  var behind = 0;
+
+  for (var i = 0; i < trail.length; i++) {
+    if (trail[i] !== location.href) behind++;
+  }
+
+  if (backButton) backButton.disabled = behind === 0;
+  if (forwardButton) forwardButton.disabled = state.myelinAhead.length === 0;
 }
 
 // What someone types into an address bar is not a URL yet. "nerves-project.org"
@@ -95,6 +217,12 @@ var ICONS = {
   go:
     '<svg viewBox="0 0 24 24" aria-hidden="true">' +
     '<path d="M5 12h13" /><path d="M12 6l6 6-6 6" /></svg>',
+  back:
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M19 12H6" /><path d="M12 6l-6 6 6 6" /></svg>',
+  forward:
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M5 12h13" /><path d="M12 6l6 6-6 6" /></svg>',
   clear:
     '<svg viewBox="0 0 24 24" aria-hidden="true">' +
     '<path d="M7 7l10 10" /><path d="M17 7 7 17" /></svg>'
@@ -126,6 +254,8 @@ function separator() {
 
 var field = null;
 var clear = null;
+var backButton = null;
+var forwardButton = null;
 
 // The clear button only earns its place while there is something to clear.
 function syncClear() {
@@ -133,6 +263,20 @@ function syncClear() {
 }
 
 function addItem(name) {
+  if (name === "back") {
+    backButton = button("back", "Back");
+    backButton.addEventListener("click", goBack);
+    bar.appendChild(backButton);
+    return;
+  }
+
+  if (name === "forward") {
+    forwardButton = button("forward", "Forward");
+    forwardButton.addEventListener("click", goForward);
+    bar.appendChild(forwardButton);
+    return;
+  }
+
   if (name === "home") {
     var home = button("home", "Home");
     home.addEventListener("click", function () {
@@ -220,6 +364,8 @@ function addItem(name) {
 ITEMS.forEach(function (name) {
   if (KNOWN.indexOf(name) >= 0) addItem(name);
 });
+
+syncHistoryButtons();
 
 /* --- collapsing ------------------------------------------------------- */
 

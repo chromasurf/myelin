@@ -55,10 +55,11 @@ ITEMS.forEach(function (name) {
   bar.appendChild(cells[name]);
 });
 
+document.body.appendChild(bar);
+
 // Pushing the document down rather than floating above it: on a kiosk app the
 // covered first row would otherwise be permanently unreachable. On the root
 // element, so a page that manages its own body padding is unaffected.
-document.body.appendChild(bar);
 document.documentElement.style.paddingTop = HEIGHT + "px";
 
 /* --- content ---------------------------------------------------------- */
