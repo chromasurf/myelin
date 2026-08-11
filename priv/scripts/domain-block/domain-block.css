@@ -18,24 +18,10 @@
  * No @font-face here, and not by oversight: font faces declared inside a shadow
  * root are ignored. They have to be in the outer document, which is the page's,
  * which is not ours. System fonts only.
+ *
+ * Everything structural is !important
  */
 
-/* Everything structural is !important, and that is not belt-and-braces.
- *
- * For the host element the cascade runs the other way round from what one
- * expects: a *normal* declaration in the outer document beats a normal :host
- * declaration, because the host belongs to the page's tree. Only an important
- * declaration from the shadow tree wins over the page.
- *
- * example.com has `div { opacity: 0.8 }`. On a reTerminal that turned this block
- * page translucent and the page underneath was readable straight through it —
- * :host { all: initial } did nothing about it. Measured there:
- *
- *     page rule alone                       0.8
- *     plus :host { opacity: 1 }             0.8   page still wins
- *     plus :host { opacity: 1 !important }  1     shadow wins
- *
- * So a block page that a stylesheet can dim is not a block page. */
 :host {
   all: initial;
 

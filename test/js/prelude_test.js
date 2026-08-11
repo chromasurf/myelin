@@ -7,7 +7,7 @@
 //
 // Not tested here: onFocus, which is seventy lines of shadow-root focus behaviour
 // and needs a real DOM to say anything true about. That one lives in keyboard.js
-// and is exercised by hand in the harness, against ideas/probe-field.
+// and is exercised by hand in the harness.
 
 const { test } = require("node:test");
 const assert = require("node:assert/strict");

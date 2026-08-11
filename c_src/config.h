@@ -1,16 +1,8 @@
 /*
  * config.h — the device's configuration, and who is allowed to override it.
  *
- * Until now scripts were configured entirely through <meta> tags in the
- * page. That covers one of a kiosk's two states. In the other one the user has
- * landed on a foreign page: no meta tags, therefore no configuration — and the
- * scripts that matter most there are exactly the ones that cannot be reached.
- * Worse, a foreign page could switch a script off by claiming
- * <meta name="myelin-disable" content="domain-block">, because nothing checked who
- * was asking.
- *
- * So configuration can now come from the device, and meta tags only count on an
- * origin the device trusts:
+ * Configuration comes from the device, and meta tags only count on an origin
+ * the device trusts:
  *
  *   {
  *     "trusted_origins": ["http://localhost:4000"],

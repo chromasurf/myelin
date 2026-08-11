@@ -1,29 +1,22 @@
 /*
- * navbar.css — two things about this file before the rules.
+ * navbar.css
  *
- * 1. Every selector is anchored on #myelin-navbar. An ID beats any class rule the
- *    visited page has, and that is the whole defence available without a shadow
- *    root. The four !important below are for declarations pages set globally
- *    rather than per element: box-sizing through *, the focus outline through
- *    *:focus, and position/z-index through layout resets. Everything else wins
- *    on specificity alone.
+ * The font is a base64 woff2, subset to what a URL and a German label need.
+ * url() to a file cannot work — our files never go over HTTP, so there is no
+ * base to resolve against — and fonts.googleapis.com is worse: a kiosk is
+ * usually offline, and a foreign page's font-src would refuse it. On a page
+ * whose CSP names font-src without data:, this face is dropped and the
+ * fallback chain carries the bar. That is why nothing here is measured in
+ * characters and no icon is a glyph.
  *
- * 2. The font is a base64 woff2, subset to what a URL and a German label need.
- *    url() to a file cannot work — our files never go over HTTP, so there is no
- *    base to resolve against — and fonts.googleapis.com is worse: a kiosk is
- *    usually offline, and a foreign page's font-src would refuse it. On a page
- *    whose CSP names font-src without data:, this face is dropped and the
- *    fallback chain carries the bar. That is why nothing here is measured in
- *    characters and no icon is a glyph.
+ * Regenerate with (fonttools + brotli):
  *
- *    Regenerate with (fonttools + brotli):
+ *   pyftsubset IBMPlexMono-Regular.ttf \
+ *     --unicodes=U+0020-007E,U+00A0,U+00B7,U+00C4,U+00D6,U+00DC,U+00E4,U+00F6,U+00FC,U+00DF,U+2013 \
+ *     --layout-features= --no-hinting --flavor=woff2 --output-file=plex400.woff2
+ *   base64 -i plex400.woff2
  *
- *      pyftsubset IBMPlexMono-Regular.ttf \
- *        --unicodes=U+0020-007E,U+00A0,U+00B7,U+00C4,U+00D6,U+00DC,U+00E4,U+00F6,U+00FC,U+00DF,U+2013 \
- *        --layout-features= --no-hinting --flavor=woff2 --output-file=plex400.woff2
- *      base64 -i plex400.woff2
- *
- *    IBM Plex Mono, © 2017 IBM Corp, SIL OFL 1.1 — font/OFL-IBMPlexMono.txt.
+ * IBM Plex Mono, © 2017 IBM Corp, SIL OFL 1.1 — font/OFL-IBMPlexMono.txt.
  */
 
 @font-face {

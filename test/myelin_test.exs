@@ -212,7 +212,7 @@ defmodule MyelinTest do
     test "every manifest is valid JSON with content_scripts" do
       manifests = manifest_paths()
 
-      assert length(manifests) == 13
+      assert length(manifests) == 12
 
       manifests
       |> Enum.each(fn path ->
@@ -254,7 +254,7 @@ defmodule MyelinTest do
 
     test "nothing is enabled by default" do
       # The scripts ship on the search path, so "enabled" is the only thing standing
-      # between a copied-in library and thirteen scripts on every page. A manifest
+      # between a copied-in library and twelve scripts on every page. A manifest
       # that switches itself on is not a detail, which is why it fails here first.
       #
       # Decoded rather than matched as a string, so a reformatted manifest cannot
@@ -292,7 +292,7 @@ defmodule MyelinTest do
     test "a script is a file body, not a construct to learn" do
       # The point of the format is that there is barely one: no wrapper object, no
       # IIFE of its own, and no "use strict" — that lives in the wrapper the loader
-      # emits, once, instead of in thirteen files.
+      # emits, once, instead of in twelve files.
       Enum.each(script_sources(), fn {id, source} ->
         refute source =~ "ctx.script(", "#{id} still declares itself through a spec object"
         refute source =~ ~r/^\(function \(\) \{/m, "#{id} still opens an IIFE of its own"
@@ -320,18 +320,6 @@ defmodule MyelinTest do
           refute source =~ dead, "#{id} still uses #{inspect(dead)}"
         end)
       end)
-    end
-
-    test "a script is stable or says it is beta, and the copy task agrees" do
-      # Two statements about the same thing — the header a reader sees first, and the
-      # list mix myelin.copy groups by. This is what keeps them in step.
-      stable =
-        bundled_sources()
-        |> Enum.reject(fn {_id, source} -> source =~ ~r/^ \* Beta\.$/m end)
-        |> Enum.map(fn {id, _source} -> id end)
-        |> Enum.sort()
-
-      assert stable == ["keyboard", "screensaver"]
     end
   end
 

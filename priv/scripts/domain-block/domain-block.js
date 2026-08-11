@@ -12,11 +12,6 @@
  * device — a visited page cannot configure it, and cannot switch it off either,
  * because meta tags only count on an origin the device trusts.
  *
- * An empty allowlist would block everything including the app itself, which is
- * never what anyone meant, so it stays out of the way and says so.
- *
- * Beta.
- *
  * Configuration
  *   allowlist   host patterns, see below                ()
  *   home        URL for the way back, "" for no link    ()

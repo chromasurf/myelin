@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Debug Overlay",
   "version": "1.0",
-  "description": "On-device diagnostics — URL, FPS, memory, JS errors, loaded scripts. Three taps top-right.",
+  "description": "On-device diagnostics — URL, FPS, memory, JS errors, loaded scripts. Three taps bottom-left.",
   "content_scripts": [
     {
       "matches": [

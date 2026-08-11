@@ -26,11 +26,6 @@ defmodule Mix.Tasks.Myelin.Copy do
 
   @default_target "priv/myelin"
 
-  # Which of the bundled scripts are held to a production standard. The rest work and
-  # are maintained, but their shape may still change — each one says "Beta." in its
-  # own header, and a test keeps the two statements in step.
-  @stable ["keyboard", "screensaver"]
-
   @impl Mix.Task
   def run(args) do
     {opts, names, _} =
@@ -64,17 +59,15 @@ defmodule Mix.Tasks.Myelin.Copy do
   end
 
   defp list(scripts) do
-    {stable, beta} = Enum.split_with(scripts, &(&1.id in @stable))
     width = scripts |> Enum.map(&String.length(&1.id)) |> Enum.max()
 
-    section("Stable", stable, width)
-    section("Beta — they work, but their shape may still change", beta, width)
+    section("Scripts", scripts, width)
 
     Mix.shell().info("""
 
-    Nothing runs until you switch it on. To do that, and nothing else:
+    Nothing runs until you switch it on — one line per script:
 
-    #{config_block(Enum.map(stable, & &1.id))}\
+    #{config_block(["keyboard"])}\
     To change one, copy it first:
 
         mix myelin.copy #{List.first(scripts).id}
@@ -148,7 +141,7 @@ defmodule Mix.Tasks.Myelin.Copy do
   end
 
   defp config_block(ids) do
-    entries = Enum.map_join(ids, ",\n", &~s|          "#{&1}" => %{enabled: true}|)
+    entries = Enum.map_join(ids, ",\n", &~s|        "#{&1}" => %{enabled: true}|)
 
     """
         config :myelin,

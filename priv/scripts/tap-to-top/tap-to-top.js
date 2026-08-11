@@ -2,20 +2,6 @@
  * Tap to Top — tap the very top edge of the screen and the page scrolls back up,
  * the way a tablet's status bar does it.
  *
- * On a long page that is the difference between one tap and a dozen swipes, and
- * on a wall panel nobody wants to swipe a dozen times.
- *
- * This is what is left of a larger script that also drew overscroll bounce,
- * pull-to-refresh and edge swipes. Those needed the scroll position while a
- * finger was still down, and WPE scrolls the document on its own thread: a
- * `scrollY` read inside a touch handler is stale — measured at 0 through an
- * entire gesture whose scroll events ran to 6044. Cog's
- * `--features=-AsyncFrameScrolling` fixes the reading and tears the display
- * instead. A tap needs none of that: it reads the position once, when nothing is
- * moving, which is the one moment the number is right.
- *
- * Beta.
- *
  * Configuration
  *   zone   height of the tap strip along the top edge, px   24
  *

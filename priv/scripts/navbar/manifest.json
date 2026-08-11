@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Navbar",
   "version": "1.0",
-  "description": "A browser bar for a kiosk: home, reload and the address. Claims the top edge, as statusbar does — run one.",
+  "description": "A browser bar for a kiosk: back, forward, home, reload and the address. Claims the top edge, as statusbar does — run one.",
   "content_scripts": [
     {
       "matches": [

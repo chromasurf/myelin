@@ -7,8 +7,6 @@
  * probe URL and it is re-checked on an interval, which is what actually answers
  * the question.
  *
- * Beta.
- *
  * Configuration
  *   text     what the banner says                        No connection
  *   probe    URL to HEAD for a real answer, "" for none   ()
