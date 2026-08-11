@@ -5,9 +5,7 @@ the [Cog](https://github.com/Igalia/cog) kiosk browser.
 
 It ships as a WPE WebKit **web process extension**: a small `.so` that Cog loads via `--web-extensions-dir`.
 
-> [Myelin](https://en.wikipedia.org/wiki/Myelin) is the sheath around a nerve fibre and increases the rate at which electrical impulses pass along. 
-
-
+> [Myelin](https://en.wikipedia.org/wiki/Myelin) is the sheath around a nerve fibre and increases the rate at which electrical impulses pass along.
 
 ## This is not a Chrome extension
 
@@ -43,9 +41,10 @@ config :myelin,
   }
 ```
 
-Done. The scripts (the supplied ones library and your custom scripts) are not enabled by default. a kiosk that configures nothing gets no scripts.
+Done. Neither the bundled scripts nor your own are enabled by default: a kiosk that
+configures nothing gets no scripts.
 
-_On the nerves host the native build is skipped and `browser_args/0` returns `[]`_
+_On the Nerves host the native build is skipped and `browser_args/0` returns `[]`._
 
 ## Where scripts come from
 
@@ -150,7 +149,9 @@ Three places, least specific first, each overriding the one before it key by key
 
 There is not much of a format. A script is a plain `.js` file, and the file body is the script — the myelin loader already wraps it in a function of its own, so a top-level `var` belongs to your script and cannot collide with another's.
 
-`ctx` is a script 'global' variable with helpers to get the config at runtime and emit/subscribe to javascript and liveview events - but just using addEventListener works fine as well
+`ctx` is a script 'global' with helpers to read the configuration at runtime and to
+emit and subscribe to JavaScript and LiveView events — though a plain
+`addEventListener` works just as well.
 
 For example:
 
@@ -192,8 +193,10 @@ A script runs once per page load and nothing ever removes it again. By then the 
 
 ### `ctx.config` and the default you pass
 
-The default value is a default value :) and **decides how the value is read.** A meta tag can only ever carry a string, while the device configuration carries real numbers, booleans and lists, so `%{numbers: true}` and `content="1"` have to mean the
-same thing. 
+The default is the value you fall back to, and it also **decides how the value is
+read.** A meta tag can only ever carry a string, while the device configuration
+carries real numbers, booleans and lists, so `%{numbers: true}` and `content="1"`
+have to mean the same thing.
 
 | Default | What arrives |
 |---|---|
@@ -205,7 +208,7 @@ same thing.
 
 ### Scripts can talk to each other
 
-`ctx.emit` and `ctx.on` are ordinary `CustomEvent`s on `window`. 
+`ctx.emit` and `ctx.on` are ordinary `CustomEvent`s on `window`.
 
 For example `offline-banner` listens for `statusbar:ready` to sit below the bar rather than under it; `statusbar` listens for `screensaver:show` to dim itself.
 
@@ -253,7 +256,9 @@ collide.
 
 If your script draws something on pages you do not control, it's best to put it in a shadow root; the page's CSS then cannot change it, and yours cannot reach the page either.
 
-List the stylesheet under `shadow_css` instead of `css` in the manifest and you'll have to setup the shadow_css manually.
+List the stylesheet under `shadow_css` instead of `css` in the manifest, and it
+arrives as text on `ctx.css` rather than being injected — attaching it to the shadow
+root is then up to your script.
 
 ```json
 { "shadow_css": ["display-lock.css"] }
@@ -304,9 +309,7 @@ document.body.appendChild(host);
 | `run_at` | When the script runs — see below. Default `document_end`. |
 | `all_frames` | Only meaningful for `document_start` — see limitations. |
 | `enabled` | Defaults to `false`: nothing runs until it is asked for. |
-| `config` |  Default settings. A script passes its own defaults to `ctx.config`, so none of the shipped ones use this. |
-
-
+| `config` | Default settings. A script passes its own defaults to `ctx.config`, so none of the shipped ones use this. |
 
 ### `run_at`
 
@@ -356,9 +359,9 @@ If you need a more full featured keyboard, swap in a library such as
 
 ## Building scripts with the asset pipeline
 
-There more than one way to write a script
+There is more than one way to write a script.
 
-**1. By hand.**  Just one `.js`, one `.css`. No precompiler.
+**1. By hand.** Just one `.js`, one `.css`. No precompiler.
 
 **2. esbuild**, for modern JS or TypeScript:
 
@@ -456,7 +459,7 @@ mix test                          # Elixir side
 MIX_TARGET=<target> mix compile   # cross-compiles priv/webext/libmyelin.so
 ```
 
-### Trying the scripts 
+### Trying the scripts
 
 #### without a device
 
@@ -469,13 +472,11 @@ open http://127.0.0.1:8899/test/harness.html
 
 [Myelin Demo](https://github.com/chromasurf/myelin_demo)
 
-
-
-## Licence
+## License
 
 MIT. Vendored: [jsmn](https://github.com/zserge/jsmn) (MIT) in `c_src/vendor/jsmn.h`.
 
-The one script that bundles a font vendors a subset of it, SIL OFL 1.1, with the licence beside it:
+The one script that bundles a font vendors a subset of it, SIL OFL 1.1, with the license beside it:
 
 - [IBM Plex Mono](https://github.com/IBM/plex) in `priv/scripts/navbar/` —
   `font/OFL-IBMPlexMono.txt`
