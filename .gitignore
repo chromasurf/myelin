@@ -6,7 +6,17 @@
 erl_crash.dump
 *.ez
 *.beam
+
+# Language servers — one per editor, and they all build their own copy of the tree.
 /.elixir_ls/
+/.expert/
+
+# macOS
+.DS_Store
+._*
+
+# Editor and agent settings that belong to a machine, not to the repository.
+/.claude/settings.local.json
 
 # ExUnit's :tmp_dir tag lands here — the install task's tests copy into it.
 /tmp/
