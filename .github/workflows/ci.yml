@@ -54,7 +54,7 @@ jobs:
             printf '("keyboard", true, {}, ""))\n'
           } > /tmp/wrapped.js
           node --check /tmp/wrapped.js
-      # ctx.config is what all thirteen scripts read their settings through, and its
+      # ctx.config is what all twelve scripts read their settings through, and its
       # coercion needs no DOM: trust is checked before the document is touched, so
       # the whole path runs under plain node.
       # The files are named rather than the directory: node 20 scans a directory
