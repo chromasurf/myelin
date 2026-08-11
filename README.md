@@ -20,7 +20,7 @@ This is an injected `<script>` tag in the page.
 
 ```elixir
 # mix.exs
-{:myelin, github: "chromasurf/myelin", tag: "v0.2.0"}
+{:myelin, github: "chromasurf/myelin", tag: "v0.1.0"}
 ```
 
 Now add the supplied `Myelin.browser_args/0` and `Myelin.browser_env/1` to the cog startup.
@@ -68,20 +68,18 @@ config :myelin, extra_dirs: ["/data/myelin"]
 
 ### The scripts
 
-This is still a work in progress. 
-
 | Script | What it does |
 |---|---|
-| `keyboard` |  Touch keyboard modelled after the iPadOS keyboard in two variants (default US ANSI (default) and German) with  punctuation on the letter block, Shift pairs and a nummeric keypad, optional number row, two symbol levels, caps lock, light/dark mode, key sizes from the viewport.  |
-| `screensaver` | Watch the Nerves logo drift across a dark screen and bounce off the edges with an optional clock. |
-| `statusbar` |  A fixed strip across the top: clock, URL, connection state.|
-| `navbar` |  A browser bar: back, forward, home, reload, address. Claims the top edge, as `statusbar` does — run one. |
-| `offline-banner` |  Says so when the connection drops, supports an optional probe URL. |
-| `domain-block` |  Covers a page that is not on an allowlist, with a way back. **Not a network filter** — see below. |
-| `debug-overlay` |  URL, viewport, FPS, JS heap, which scripts ran, and the last few JS errors. Three taps into the bottom-left corner. |
-| `tap-to-top` |  Tap the very top edge and the page scrolls back up, on a spring. |
+| `keyboard` | Touch keyboard, US ANSI or German. Two symbol levels, caps lock, numeric keypad, light/dark. |
+| `screensaver` | Bouncing Nerves logo, optional clock. |
+| `statusbar` | Fixed strip at the top: clock, URL, connection. |
+| `navbar` | Back, forward, home, reload, address. Claims the top edge, as `statusbar` does — run one. |
+| `offline-banner` | Banner while the connection is down. Optional probe URL. |
+| `domain-block` | Covers a page that is not on the allowlist. **Not a network filter** — see below. |
+| `debug-overlay` | URL, viewport, FPS, JS heap, loaded scripts, last JS errors. Three taps bottom-left. |
+| `tap-to-top` | Tap the top edge, the page springs back up. |
 
-`ideas/` holds five more that **do not ship** — a PIN lock, a LiveView status bar, a confetti gesture and two others. 
+`ideas/` holds four more that **do not ship**.
 
 ### Copying one to change it
 

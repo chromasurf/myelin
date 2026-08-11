@@ -1,5 +1,4 @@
-/* Colours and height come from JS (myelin-statusbar-bg / -fg / -height), so they
-   are deliberately absent here. */
+/* Colours and height come from JS (myelin-statusbar-bg / -fg / -height) */
 
 #myelin-statusbar {
   position: fixed;

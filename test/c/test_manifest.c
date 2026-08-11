@@ -588,7 +588,7 @@ static void test_example_manifests(void)
     if (!list)
         return;
 
-    CHECK(list->n_items == 13);
+    CHECK(list->n_items == 12);
     CHECK(warning_count == 0);
 
     for (size_t i = 0; i < list->n_items; i++) {

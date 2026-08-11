@@ -12,7 +12,6 @@
       "canary": "myelin-canary-2f8a"
     },
     "navbar": { "enabled": true, "home": "/test/harness.html" },
-    "probe-field": { "enabled": true },
     "domain-block": {
       "allowlist": ["127.0.0.1:8899"],
       "home": "/test/harness.html",

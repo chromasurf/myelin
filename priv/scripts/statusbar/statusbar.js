@@ -7,8 +7,6 @@
  * Neither knows about the other, so whichever is injected second wins the padding
  * and the first ends up covering the page it meant to make room on. Run one.
  *
- * Beta.
- *
  * Configuration
  *   height   px                                          28
  *   bg       any CSS colour                              #1c1f21

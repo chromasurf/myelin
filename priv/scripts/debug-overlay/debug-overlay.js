@@ -3,17 +3,8 @@
  * rather than at a laptop with the remote inspector open. Three quick taps into
  * the **bottom-left** corner show and hide it.
  *
- * Bottom-left rather than a top corner, because the top edge is spoken for: a bar
- * (`navbar`, `statusbar`) lives there, and `tap-to-top` answers a tap on the very
- * top edge by scrolling the page up. A diagnostics gesture that fights three other
- * things for the same pixels is a diagnostics gesture nobody can use.
- *
  * Shows URL, viewport, FPS, JS heap where WebKit exposes it, the scripts that
- * registered themselves, and the last few JS errors. That last part is the reason
- * it exists: an exception in a script is otherwise invisible unless somebody
- * is watching the Cog log.
- *
- * Beta.
+ * registered themselves, and the last few JS errors.
  *
  * Configuration
  *   open   show it straight away instead of waiting for the taps   false
@@ -54,9 +45,6 @@ window.addEventListener("unhandledrejection", function (event) {
 
 /* --- rendering -------------------------------------------------------- */
 
-// Built as elements rather than assembled into innerHTML: half of what is
-// shown here comes from the page — its URL, the message of whatever it threw —
-// and textContent cannot be talked into markup.
 function line(className, text) {
   var el = document.createElement("div");
   el.className = className;

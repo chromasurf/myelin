@@ -1,9 +1,6 @@
 /*
  * match_pattern.h — Chrome-style match patterns.
  *
- * Deliberately libc-only (no GLib, no WebKit) so the whole matching layer can
- * be unit tested on a development machine without a WPE WebKit toolchain.
- *
  * Grammar (subset of the Chrome/WebExtension spec):
  *
  *   <pattern> := "<all_urls>" | <scheme> "://" <host> [":" <port>] <path>
@@ -15,11 +12,7 @@
  * also matches the bare domain: a pattern for any scheme, any subdomain of
  * example.com and any path matches both example.com and a.example.com.
  *
- * One deliberate deviation from Chrome: a port is allowed in the pattern.
- * Chrome rejects such patterns outright, but the whole point of this loader is
- * kiosk pages served from a local Phoenix app, so a pattern naming port 4000
- * has to work. When the pattern carries a port the URL must use the same one;
- * when it does not, any port matches.
+ * A port is allowed in the pattern.
  */
 
 #ifndef MYL_MATCH_PATTERN_H

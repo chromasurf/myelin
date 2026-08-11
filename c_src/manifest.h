@@ -1,7 +1,7 @@
 /*
  * manifest.h — manifest.json loading.
  *
- * The format is a deliberately small subset of a WebExtension MV3 manifest.
+ * The format is a small subset of a WebExtension MV3 manifest.
  * It is a *file format* only: there is no chrome.* / browser.* API behind it,
  * because WPE WebKit exposes no WebExtension bindings to GLib. Keys outside
  * the subset below are reported once and then ignored.
@@ -39,9 +39,6 @@
  *                 them injected into the page, so it can put them in a shadow
  *                 root. Both lists may be used at once: a script that both
  *                 styles the page and owns an encapsulated widget needs both.
- *
- * Like match_pattern.h this stays libc-only so it can be unit tested on a
- * development machine.
  */
 
 #ifndef MYL_MANIFEST_H

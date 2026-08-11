@@ -61,10 +61,6 @@
   transition: transform 180ms ease-out;
 }
 
-/* Warm-editorial rather than white: beige surfaces, near-black text, an orange
-   accent. This is a default, not a constraint — every colour is a custom
-   property, so a copy of this script can be recoloured by overriding the six
-   below and nothing else. */
 #myelin-osk[data-theme="light"] {
   --myelin-osk-bg: rgba(245, 244, 240, 0.98);
   --myelin-osk-key: #fbf8f3;

@@ -1,11 +1,8 @@
 /*
  * Navbar — a browser bar for a kiosk: back, forward, home, reload and the address.
  *
- * No menu button: a launcher or a tile grid is a full-screen view, and anything
- * built that way can listen for its own event while this stays a bar.
- *
- * **Back and forward do not use the browser's history, and that is deliberate.**
- * Two reasons, both learned the hard way. On this Cog/WPE stack a history
+ * **Back and forward do not use the browser's history.**
+ * On this Cog/WPE stack a history
  * navigation leaves the panel showing the old page's last frame while the web
  * process has moved on — the compositor stops getting frames and the terminal
  * looks frozen; a plain location load repaints reliably. And a bar cannot keep a
@@ -24,13 +21,6 @@
  * It claims the top edge by pushing the document down, and so does statusbar.
  * Neither knows about the other, so whichever is injected second wins the padding.
  * Run one.
- *
- * It also takes both top corners, so a corner gesture belonging to another script
- * has to live at the bottom while this bar runs — a tap at 20,20 presses a button
- * here instead of counting. `debug-overlay` already uses the bottom-left corner
- * for exactly that reason.
- *
- * Beta.
  *
  * Configuration
  *   height     px, tap targets scale with it              56

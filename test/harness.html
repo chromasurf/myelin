@@ -509,36 +509,25 @@
   window.__hxInit = function () {
     // Which group a script belongs to, and the one sentence above each group.
     //
-    // These are the two axes the library is arranged along, not a functional
-    // grouping: what you get without asking, what we maintain but leave off, and
-    // what is there to be read and reworked. Which is also the order someone meets
-    // them in.
-    //
     // Hand-kept, which is a risk: the list of scripts comes from the manifests, so
     // a new script turns up on its own — but it would turn up in no group and
     // vanish from the page. Hence UNGROUPED at the end, which collects whatever is
     // missing here. If you see it, add the script to a group above.
     var GROUPS = [
       {
-        title: "Stable",
+        title: "Scripts",
         blurb:
-          "Shipped in priv/scripts/ and held to a production standard. Text goes into a field, " +
-          "and the screen goes dark when nobody is there.",
-        ids: ["keyboard", "screensaver"]
-      },
-      {
-        title: "Beta",
-        blurb:
-          "Also shipped, also maintained, but their shape may still change. Each one is a decision: " +
-          "diagnostics on a customer-facing panel, 48px off every page, a page covered over. " +
+          "Shipped in priv/scripts/, all of them off until they are switched on. " +
           "navbar and statusbar both claim the top edge — run one.",
         ids: [
-          "kiosk-guard",
+          "keyboard",
+          "screensaver",
+          "statusbar",
+          "navbar",
+          "offline-banner",
           "domain-block",
           "debug-overlay",
-          "offline-banner",
-          "navbar",
-          "statusbar"
+          "tap-to-top"
         ]
       },
       {
@@ -549,7 +538,6 @@
         ids: [
           "display-lock",
           "statusbar-liveview",
-          "probe-field",
           "idle-reload",
           "konami"
         ]
@@ -711,19 +699,21 @@
       },
       {
         id: "debug-overlay",
-        doc: "URL, viewport, FPS, JS heap, loaded scripts and the last JS errors. Three taps in the top-right corner toggle it. Replaces poking at the remote inspector when you are standing at the panel.",
-        opts: [{ key: "debug-overlay-open", label: "open", kind: "flag", on: "1", note: "or three taps top-right" }]
+        doc: "URL, viewport, FPS, JS heap, loaded scripts and the last JS errors. Three taps in the bottom-left corner toggle it. Replaces poking at the remote inspector when you are standing at the panel.",
+        opts: [{ key: "debug-overlay-open", label: "open", kind: "flag", on: "1", note: "or three taps bottom-left" }]
       },
       {
-        id: "kiosk-guard",
-        doc: "Suppresses context menu, text selection, drag & drop and pinch zoom, and hides the mouse cursor after a few idle seconds. Text fields stay selectable.",
+        id: "tap-to-top",
+        doc: "Tap the very top edge and the page springs back up, the way a tablet's status bar does it. On a long page that is one tap instead of a dozen swipes.",
         opts: [
           {
-            key: "kiosk-guard-allow",
-            label: "allow",
-            kind: "text",
-            def: "",
-            note: "selection contextmenu cursor zoom drag — any of them, space separated"
+            key: "tap-to-top-zone",
+            label: "zone",
+            kind: "number",
+            def: 24,
+            unit: "px",
+            quick: [12, 60],
+            note: "height of the tap strip along the top edge"
           }
         ]
       },
@@ -755,15 +745,6 @@
         id: "konami",
         doc: "Reacting to a secret gesture: the classic sequence, or five taps in the top-left corner. Confetti on a canvas, no library.",
         opts: []
-      },
-      {
-        id: "probe-field",
-        doc: "A text field and a number field to tap, for a page that has none of its own — bringing the library up on a device usually means staring at a screen with nothing to focus. Counts the input events as you type, which is the part that matters: the keyboard writes through the native value setter and then fires a bubbling input event, and without that LiveView would never see the change. It sits in a shadow root, which also demonstrates that a field inside one is reachable at all.",
-        opts: [
-          { label: "right", kind: "config", def: "40px", note: "where it sits — top right by default" },
-          { label: "top", kind: "config", def: "180px" },
-          { label: "left", kind: "config", def: "—", note: "set this instead and it wins" }
-        ]
       },
       {
         id: "domain-block",

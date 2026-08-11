@@ -14,8 +14,7 @@
  * reaches those through a long press, and there is no long press on a panel — no
  * gestures, no second level for letters, one tap is all there is. Where the
  * *function* keys sit is iOS's arrangement, which suits a touch panel better than a
- * PC keyboard's. There are no caret keys: tapping into the text puts the caret
- * where the finger is, and the two arrows cost the space bar a third of its width.
+ * PC keyboard's.
  *
  * Under the :weston backend, weston.ini may also enable weston-keyboard
  * ([input-method] / overlay-keyboard=true). Turn that off, or two keyboards appear.
@@ -214,17 +213,6 @@ var DEFAULT_NUMERIC_SELECTOR =
   'input[type="number"], input[inputmode="numeric"], input[inputmode="decimal"]';
 var NUMERIC_SELECTOR = usable(ctx.config("keypad", DEFAULT_NUMERIC_SELECTOR));
 
-// A CSS typo in runtime.exs — a trailing comma is the one to expect, since the
-// default here is a list — makes Element.matches() throw, and not once: on every
-// focus change for the life of the page, from inside the focus callback, so no
-// field would ever raise a keyboard again and every tap would log afresh. The C
-// side degrades a malformed configuration on purpose ("a typo in runtime.exs must
-// not take every script down with it"); a CSS typo deserves the same, said out
-// loud once.
-//
-// Note that an *unclosed* bracket is not one of these: CSS closes open blocks at
-// the end of the input, so "input[type=number" parses as if the bracket were
-// there. What throws is a stray comma, an empty :not(), a leading digit.
 function usable(selector) {
   try {
     document.createDocumentFragment().querySelector(selector);
@@ -245,18 +233,6 @@ function isNumericField(el) {
   return !!el && typeof el.matches === "function" && el.matches(NUMERIC_SELECTOR);
 }
 
-// Digits, a separator, and the two ways out. Three per row, so the keys come
-// out thumb-sized rather than stretched across the panel.
-//
-// The decimal separator follows the field, and it has to: a comma is not part of
-// a valid floating-point number, so assigning "1,5" to an <input type="number">
-// assigns nothing at all and the element reports "" — every decimal silently
-// lost, on the one field type a keypad is written for. Anywhere else —
-// inputmode="numeric" on a text field, which is what a LiveView form usually
-// carries — a comma is what a German terminal expects.
-//
-// A point is not the whole fix on a number field: see `carried` below for the
-// half-typed "12." the element also refuses.
 function numericRows() {
   var separator = target && target.type === "number" ? "." : ",";
 
@@ -557,13 +533,6 @@ function keyParts(entry) {
   return { label: label, action: action };
 }
 
-// What a key produces in the current state.
-//
-// Two rules from the physical keyboard, and they differ: Caps Lock only ever
-// affects letters — Caps+, is a comma, not a semicolon — while Shift reaches
-// the paired character. And "ß".toUpperCase() is "SS", two characters on one
-// key: correct German for a capital ß, but a key that grows a second glyph and
-// types two of them is not what anyone reaches for, so it stays as it is.
 function charFor(value, pair) {
   if (pair) return shifted ? pair : value;
   if (!shifted && !capsLock) return value;
@@ -643,7 +612,7 @@ root.addEventListener("click", function (event) {
   var button = event.target.closest(".myelin-osk-key");
   if (!button || !target) return;
 
-  // Last line of defence: if focus escaped anyway, put it back before
+  // If focus escaped anyway, put it back before
   // writing, or the keystroke would go nowhere. Compared through shadow
   // boundaries, or a field inside one would be refocused on every keystroke —
   // document.activeElement stops at the host.
@@ -786,10 +755,6 @@ function hide() {
 
 /* --- watching focus, including inside shadow roots --------------------- */
 
-// This lives here rather than in ctx because the keyboard is the only script that
-// needs it: seventy lines of measured browser behaviour serve exactly one caller.
-// ideas/probe-field is the fixture that demonstrates the case.
-
 // Which field has focus, walked into shadow roots: document.activeElement stops
 // at the host and would report the component, not the field inside it.
 function activeField() {
@@ -844,11 +809,6 @@ function onFocus(handler) {
     }, 0);
   }
 
-  // A shadow root is a DocumentFragment that carries a host. Both halves are
-  // needed: an <a> or an <area> has a .host of its own — the host part of its
-  // URL — so "carries a host" alone accepts every link in the composedPath. The
-  // nodeType number rather than Node.DOCUMENT_FRAGMENT_NODE or instanceof
-  // ShadowRoot, because both of those are globals the page can replace.
   function register(node) {
     if (!node || node.nodeType !== 11 || !node.host || !node.addEventListener) {
       return;
@@ -869,11 +829,6 @@ function onFocus(handler) {
     }
   }
 
-  // A field inside a shadow root can already hold focus before this runs — the
-  // page focused it, or the script was injected into a page in use. Nothing will
-  // ever announce that root: the events it fires stay inside it, and the one
-  // document event that would have named it is long past. So walk what holds
-  // focus now and register on the way in.
   for (var el = document.activeElement; el && el.shadowRoot; el = el.shadowRoot.activeElement) {
     register(el.shadowRoot);
   }

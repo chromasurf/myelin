@@ -45,18 +45,6 @@ defmodule Mix.Tasks.Myelin.CopyTest do
       assert File.ls!(tmp) == []
     end
 
-    test "separates stable from beta", %{tmp_dir: tmp} do
-      File.cd!(tmp, fn -> run(["--list"]) end)
-
-      [_, rest] = String.split(output(), "Stable:", parts: 2)
-      [stable, beta] = String.split(rest, "Beta", parts: 2)
-
-      assert String.contains?(stable, "keyboard")
-      assert String.contains?(stable, "screensaver")
-      refute String.contains?(stable, "navbar")
-      assert String.contains?(beta, "navbar")
-    end
-
     test "says how to switch one on, since copying does not", %{tmp_dir: tmp} do
       File.cd!(tmp, fn -> run(["--list"]) end)
       listed = output()
@@ -73,7 +61,7 @@ defmodule Mix.Tasks.Myelin.CopyTest do
       # Copying is not a setup step: a script runs from where it ships, so
       # a bare invocation must not scatter directories about.
       assert File.ls!(tmp) == []
-      assert String.contains?(output(), "Stable:")
+      assert String.contains?(output(), "Scripts:")
     end
   end
 

@@ -67,26 +67,6 @@ the code they constrain. Read that before changing it.
 A script is a plain `.js` file whose body is the script — the loader wraps it in a
 function, so there is no IIFE to write and no `"use strict"` to declare. Settings come
 from `ctx.config(name, default)`, events from `ctx.on` and `ctx.emit`, and everything
-else from the DOM. Read `priv/scripts/kiosk-guard` for the shortest whole example, and
+else from the DOM. Read `priv/scripts/tap-to-top` for the shortest whole example, and
 *Writing a script* in the README for the rest.
 
-What *is* fixed is the header: a title line, a paragraph saying what it does and why,
-`Configuration` as a table of name, meaning and default, and `Events` listing what it
-emits and what it listens for.
-
-`priv/scripts/` is what ships and is held to that standard. `ideas/` is for things
-worth reading but not finished; nothing there ships or is loadable, and
-`ideas/README.md` says of each one what is unresolved about it.
-
-A new script needs a directory, a `manifest.json`, and nothing else. Tests assert that
-every manifest parses with the real C parser, that referenced files exist and stay
-inside the directory, that ids are unique across both directories, that no manifest
-carries defaults the script passes to `ctx.config` anyway, and that **nothing is
-enabled by default** — a script that switches itself on fails that last one on purpose.
-
-Do not reach for `document.getElementById(id)` plus `remove()` before adding your own
-element. `document-loaded` fires once per page, so a script body runs once — and if it
-finds an element of the *page* with that id, it deletes part of somebody else's page.
-
-A script is stable or it says `Beta.` in its header. The copy task groups by the same
-distinction, and a test keeps the two statements in step.
