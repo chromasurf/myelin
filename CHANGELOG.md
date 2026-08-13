@@ -4,6 +4,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). While the
 major version is 0, a minor bump is where a breaking change may appear.
 
+## 0.1.1
+
+- Published on hex.pm.
+- Elixir requirement is now `~> 1.17`.
+
 ## 0.1.0
 
 First release.
