@@ -1,14 +1,16 @@
 defmodule Myelin.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @source_url "https://github.com/chromasurf/myelin"
 
   def project do
     [
       app: :myelin,
       version: @version,
-      elixir: "~> 1.15",
+      # lib/myelin.ex needs :json from OTP 27, and 1.17 is the first Elixir line
+      # that runs on it — 1.15/1.16 would pass resolution and fail at compile.
+      elixir: "~> 1.17",
       # The native part is a WPE WebKit web process extension, not a NIF. It is
       # cross-compiled against the Nerves system staging dir and loaded by Cog
       # via --web-extensions-dir. On MIX_TARGET=host the Makefile no-ops.
@@ -86,8 +88,13 @@ defmodule Myelin.MixProject do
       extras: ["README.md", "CHANGELOG.md", "CONTRIBUTING.md", "LICENSE"],
       source_ref: "v#{@version}",
       source_url: @source_url,
+      # hex.publish builds the docs in :dev, where dev/ is compiled — the harness
+      # modules would otherwise show up in hexdocs without being in the package.
+      filter_modules: fn mod, _meta ->
+        mod not in [:myelin_harness, Mix.Tasks.Myelin.Harness]
+      end,
       groups_for_modules: [
-        "Mix tasks": [Mix.Tasks.Myelin.Copy, Mix.Tasks.Myelin.Harness]
+        "Mix tasks": [Mix.Tasks.Myelin.Copy]
       ]
     ]
   end

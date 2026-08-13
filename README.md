@@ -18,7 +18,7 @@ This is an injected `<script>` tag in the page.
 
 ```elixir
 # mix.exs
-{:myelin, github: "chromasurf/myelin", tag: "v0.1.0"}
+{:myelin, "~> 0.1.1"}
 ```
 
 Now add the supplied `Myelin.browser_args/0` and `Myelin.browser_env/1` to the cog startup.
