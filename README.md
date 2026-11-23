@@ -69,7 +69,7 @@ config :myelin, extra_dirs: ["/data/myelin"]
 
 | Script | What it does |
 |---|---|
-| `keyboard` | Touch keyboard, US ANSI or German. Two symbol levels, caps lock, numeric keypad, light/dark. |
+| `keyboard` | Touch keyboard, US ANSI or German. Two symbol levels, caps lock, numeric keypad, light/dark. No keyboard for fields with `inputmode="none"`. |
 | `screensaver` | Bouncing Nerves logo, optional clock. |
 | `statusbar` | Fixed strip at the top: clock, URL, connection. |
 | `navbar` | Back, forward, home, reload, address. Claims the top edge, as `statusbar` does — run one. |

@@ -315,6 +315,8 @@ if (darkQuery.addEventListener) {
 
 function isEditable(el) {
   if (!el) return false;
+  // inputmode="none": the page asks for no on-screen keyboard, as on iOS and Android.
+  if (el.inputMode === "none") return false;
   if (el.isContentEditable) return true;
   if (el.tagName === "TEXTAREA") return !el.readOnly && !el.disabled;
   if (el.tagName !== "INPUT") return false;
